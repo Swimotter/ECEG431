@@ -14,5 +14,12 @@ CHIP DMux4Way {
     OUT a, b, c, d;
 
     PARTS:
-    //// Replace this comment with your code.
+    Mux(a=in, b=false, sel=sel[0], out=mux1);
+    Mux(a=false, b=in, sel=sel[0], out=mux2);
+    Mux(a=in, b=false, sel=sel[0], out=mux3);
+    Mux(a=false, b=in, sel=sel[0], out=mux4);
+    Mux(a=mux1, b=false, sel=sel[1], out=a);
+    Mux(a=mux2, b=false, sel=sel[1], out=b);
+    Mux(a=false, b=mux3, sel=sel[1], out=c);
+    Mux(a=false, b=mux4, sel=sel[1], out=d);
 }
