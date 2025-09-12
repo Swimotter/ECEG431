@@ -19,7 +19,6 @@
  * their new values only in the next cycle.
  */
 CHIP CPU {
-
     IN  inM[16],         // M value input  (M = contents of RAM[A])
         instruction[16], // Instruction for execution
         reset;           // Signals whether to re-start the current
@@ -31,6 +30,49 @@ CHIP CPU {
         addressM[15],    // Address in data memory (of M)
         pc[15];          // address of next instruction
 
+    /**
+     * C-instruction: 1xxaccccccdddjjj
+     * The a and cccccc bits code the comp part of the instruction
+     * The ddd bits code the dest part of the instruction
+     * The jjj bits code the jump part of the instruction
+     * The xx bits are ignored
+     * 
+     * A-instruction: 0aaaaaaaaaaaaaaa
+     * The a bits are the binary value that should be loaded into the A register
+     */
     PARTS:
-	//// Replace this comment with your code.
+    Not(in=instruction[15], out=aInst);
+    Mux16(a=aluOut, b[15]=false, b[0..14]=instruction[0..14], sel=aInst, out=aRegIn); // left-most bit is 0 if A inst, 1 if C inst
+    Or(a=aInst, b=instruction[5], out=aRegLoad); // A inst | d1
+    ARegister(in=aRegIn, load=aRegLoad, out=aRegOut, out[0..14]=addressM);
+    Mux16(a=aRegOut, b=inM, sel=instruction[12], out=aluIn);
+    
+
+    And(a=instruction[15], b=instruction[4], out=dRegLoad); // C inst + d2
+    DRegister(in=aluOut, load=dRegLoad, out=dRegOut);
+
+
+    ALU(x=dRegOut, y=aluIn, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluOut, out=outM, zr=zr, ng=ng);
+    
+
+    // Jump
+    Not(in=ng, out=gte);
+    Not(in=zr, out=nz);
+    And(a=gte, b=nz, out=gt);
+    
+    And(a=gt, b=instruction[0], out=jgt);
+    And(a=zr, b=instruction[1], out=jeq);
+    And(a=ng, b=instruction[2], out=jlt);
+    Or(a=jgt, b=jeq, out=jge);
+    Or(a=jlt, b=jeq, out=jle);
+    Or(a=jge, b=jlt, out=jmp);
+    
+    And(a=instruction[15], b=jmp, out=pcLoad);
+    Not(in=pcLoad, out=pcInc);
+    
+
+    PC(in=aRegOut, load=pcLoad, inc=pcInc, reset=reset, out[0..14]=pc);
+    
+
+    And(a=instruction[15], b=instruction[3], out=writeM); // C inst + d3   
 }
