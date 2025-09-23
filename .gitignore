@@ -1,0 +1,11 @@
+# User files
+.vscode
+
+# Program output files
+*.out
+
+# Compiled programs
+*.exe
+
+# Generated folders
+bin
