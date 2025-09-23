@@ -1,14 +1,16 @@
 CXX := g++
 CXXFLAGS := -std=c++20 -Wall -O2
 
-SRC := $(wildcard src/*.cpp)
+SRCS := $(wildcard src/*.cpp)
 INCLUDE_FOLDER := include
+
+OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 
 PROGRAMS := ../add/Add ../max/Max ../max/MaxL ../pong/Pong ../pong/PongL ../rect/Rect ../rect/RectL
 ASSEMBLER := bin/assembler.exe
 BUILT_IN_ASSEMBLER := Assembler.bat
 
-all: $(ASSEMBLER)
+all: builddir $(ASSEMBLER)
 
 test: $(PROGRAMS)
 
@@ -19,11 +21,13 @@ $(PROGRAMS): $(ASSEMBLER)
 	$(BUILT_IN_ASSEMBLER) $@.asm
 	diff $@-C++.hack $@.hack
 
-$(ASSEMBLER): $(SRC)
-	mkdir -p $(dir $(ASSEMBLER))
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) $^ -o $@
+$(ASSEMBLER): $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
-.PHONY: clean
+bin/%.o: src/%.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
+
+.PHONY: clean builddir
 
 clean:
 	rm -rf bin/
@@ -31,3 +35,6 @@ clean:
 	rm -f ../max/*.hack
 	rm -f ../pong/*.hack
 	rm -f ../rect/*.hack
+
+builddir:
+	mkdir -p $(dir $(ASSEMBLER))

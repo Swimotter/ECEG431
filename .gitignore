@@ -7,6 +7,9 @@
 # Compiled programs
 *.exe
 
+# Object files
+*.o
+
 # Generated folders
 bin
 
