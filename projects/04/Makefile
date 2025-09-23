@@ -2,7 +2,9 @@ EMULATOR := CPUEmulator.bat
 # fill/Fill.tst requires running in GUI
 PROGRAMS := fill/FillAutomatic mult/Mult
 
-all: $(PROGRAMS)
+all:
+
+test: $(PROGRAMS)
 
 $(PROGRAMS):
 	$(EMULATOR) $@.tst

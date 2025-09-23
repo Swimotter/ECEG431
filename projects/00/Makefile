@@ -1,7 +1,9 @@
 SIMULATOR := HardwareSimulator.bat
 PROGRAMS := Off
 
-all: $(PROGRAMS)
+all:
+
+test: $(PROGRAMS)
 
 $(PROGRAMS):
 	$(SIMULATOR) $@.tst

@@ -7,7 +7,9 @@ INCLUDE_FOLDER := include
 PROGRAMS := ../add/Add ../max/Max ../max/MaxL ../pong/Pong ../pong/PongL ../rect/Rect ../rect/RectL
 ASSEMBLER := bin/assembler.exe
 
-all: $(PROGRAMS)
+all: $(ASSEMBLER)
+
+test: $(PROGRAMS)
 
 $(PROGRAMS): $(ASSEMBLER)
 	$(ASSEMBLER) $@.asm

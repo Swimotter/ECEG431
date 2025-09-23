@@ -6,6 +6,11 @@ all:
 		"$(MAKE)" -C $$dir all; \
 	done
 
+test:
+	for dir in $(SUBDIRS); do \
+		"$(MAKE)" -C $$dir test; \
+	done
+
 .PHONY: clean
 
 clean:

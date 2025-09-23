@@ -2,7 +2,9 @@ SIMULATOR := HardwareSimulator.bat
 # Memory.tst requires running in GUI
 PROGRAMS := ComputerAdd ComputerMax ComputerRect CPU-external CPU
 
-all: $(PROGRAMS)
+all:
+
+test: $(PROGRAMS)
 
 $(PROGRAMS):
 	$(SIMULATOR) $@.tst
