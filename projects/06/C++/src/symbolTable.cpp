@@ -1,17 +1,17 @@
 #include "symbolTable.hpp"
 
 
-void SymbolTable::addEntry(std::string symbol, int address)
+void SymbolTable::addEntry(const std::string symbol, const int address)
 {
     table[symbol] = address;
 }
 
-bool SymbolTable::contains(std::string symbol)
+bool SymbolTable::contains(const std::string symbol)
 {
     return table.contains(symbol);
 }
 
-int SymbolTable::getAddress(std::string symbol)
+int SymbolTable::getAddress(const std::string symbol)
 {
     return table.at(symbol);
 }

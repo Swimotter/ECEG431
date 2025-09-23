@@ -10,9 +10,8 @@
 
 static constexpr int MAX_BITS = 15;
 
-Assembler::Assembler(std::filesystem::path file) : parser(file)
+Assembler::Assembler(const std::filesystem::path inFile, const std::filesystem::path outFile) : parser(inFile)
 {
-    std::string outFile = file.stem().string() + ".hack";
     ofs.open(outFile);
 
     initializeSymbolTable();

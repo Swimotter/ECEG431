@@ -4,10 +4,6 @@
 #include <iostream>
 
 
-namespace {
-    static constexpr int MAX_LINE_LENGTH = 200;
-}
-
 bool Parser::isWhiteSpace() const
 {
     return line.find_first_not_of(" \t\n\v\f\r") == line.length() - 1;
@@ -21,7 +17,7 @@ bool Parser::isComment() const
 
 Parser::Parser(std::filesystem::path file)
 {
-    ifs.open(file, std::ifstream::in);
+    ifs.open(file);
 }
 
 bool Parser::hasMoreLines()
@@ -38,11 +34,10 @@ void Parser::advance()
         std::getline(ifs, line);
         isInstruction = !isWhiteSpace() && !isComment();
     }
-    std::cout << line << std::endl;
 }
 
 // NOTE: This assumes no leading whitespace
-Parser::InstructionType Parser::instructionType()
+const Parser::InstructionType Parser::instructionType()
 {
     switch (line[0])
     {
@@ -66,7 +61,7 @@ Parser::InstructionType Parser::instructionType()
 }
 
 // NOTE: This assumes no leading whitespace
-std::string Parser::symbol() const
+const std::string Parser::symbol() const
 {
     if (type == InstructionType::A_INSTRUCTION) {
         return line.substr(1);
@@ -76,21 +71,21 @@ std::string Parser::symbol() const
     }
 }
 
-std::string Parser::dest() const
+const std::string Parser::dest() const
 {
     return line.substr(0, line.find("="));
 }
 
-std::string Parser::comp() const
+const std::string Parser::comp() const
 {
     return line.substr(line.find("=") + 1, line.find(";") - 1);
 }
 
-std::string Parser::jump() const
+const std::string Parser::jump() const
 {
     // We don't have a jump
     if (line.find(";") == std::string::npos) {
-        return std::string();
+        return "";
     }
     else {
         return line.substr(line.find(";") + 1);

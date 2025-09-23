@@ -6,9 +6,9 @@
 
 class SymbolTable {
     public:
-        void addEntry(std::string symbol, int address);
-        bool contains(std::string symbol);
-        int getAddress(std::string symbol);
+        void addEntry(const std::string symbol, const int address);
+        bool contains(const std::string symbol);
+        int getAddress(const std::string symbol);
 
     private:
         std::unordered_map<std::string, int> table;

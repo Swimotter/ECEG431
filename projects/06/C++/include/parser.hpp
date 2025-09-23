@@ -17,11 +17,11 @@ class Parser {
 
         bool hasMoreLines();
         void advance();
-        InstructionType instructionType();
-        std::string symbol() const;
-        std::string dest() const;
-        std::string comp() const;
-        std::string jump() const;
+        const InstructionType instructionType();
+        const std::string symbol() const;
+        const std::string dest() const;
+        const std::string comp() const;
+        const std::string jump() const;
 
     private:
         std::ifstream ifs;

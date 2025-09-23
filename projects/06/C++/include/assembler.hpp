@@ -10,7 +10,7 @@
 
 class Assembler {
     public:
-        Assembler(std::filesystem::path file);
+        Assembler(const std::filesystem::path inFile, const std::filesystem::path outFile);
 
         void assemble();
 

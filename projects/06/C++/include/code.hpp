@@ -5,7 +5,7 @@
 
 class Code {
     public:
-        static std::string dest(std::string destHuman);
-        static std::string comp(std::string compHuman);
-        static std::string jump(std::string jumpHuman);
+        static const std::string dest(const std::string destHuman);
+        static const std::string comp(const std::string compHuman);
+        static const std::string jump(const std::string jumpHuman);
 };

@@ -2,7 +2,7 @@
 
 
 // NOTE: This doesn't handle input with errors
-std::string Code::dest(std::string destHuman)
+const std::string Code::dest(std::string destHuman)
 {
     std::string ret = "000";
     // NOTE: Could just use a big switch table, maybe test for efficiency
@@ -20,7 +20,7 @@ std::string Code::dest(std::string destHuman)
 }
 
 // NOTE: This doesn't handle input with errors
-std::string Code::comp(std::string compHuman)
+const std::string Code::comp(std::string compHuman)
 {
     if (compHuman == "0") {
         return "0101010";
@@ -110,7 +110,7 @@ std::string Code::comp(std::string compHuman)
 }
 
 // NOTE: This doesn't handle input with errors
-std::string Code::jump(std::string jumpHuman)
+const std::string Code::jump(std::string jumpHuman)
 {
     if (jumpHuman == "") {
         return "000";
