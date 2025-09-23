@@ -6,6 +6,7 @@ INCLUDE_FOLDER := include
 
 PROGRAMS := ../add/Add ../max/Max ../max/MaxL ../pong/Pong ../pong/PongL ../rect/Rect ../rect/RectL
 ASSEMBLER := bin/assembler.exe
+BUILT_IN_ASSEMBLER := Assembler.bat
 
 all: $(ASSEMBLER)
 
@@ -14,6 +15,9 @@ test: $(PROGRAMS)
 $(PROGRAMS): $(ASSEMBLER)
 	$(ASSEMBLER) $@.asm
 	mv $@.hack $@-C++.hack
+	sleep 1s
+	$(BUILT_IN_ASSEMBLER) $@.asm
+	diff $@-C++.hack $@.hack
 
 $(ASSEMBLER): $(SRC)
 	mkdir -p $(dir $(ASSEMBLER))
@@ -23,7 +27,7 @@ $(ASSEMBLER): $(SRC)
 
 clean:
 	rm -rf bin/
-	rm -f ../add/*-C++.hack
-	rm -f ../max/*-C++.hack
-	rm -f ../pong/*-C++.hack
-	rm -f ../rect/*-C++.hack
+	rm -f ../add/*.hack
+	rm -f ../max/*.hack
+	rm -f ../pong/*.hack
+	rm -f ../rect/*.hack

@@ -1,5 +1,5 @@
 # LOLCODE doesn't have a working windows port
-SUBDIRS = C++
+SUBDIRS := C++
 
 all:
 	for dir in $(SUBDIRS); do \
