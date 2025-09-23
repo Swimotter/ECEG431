@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "code.hpp"
 
@@ -19,47 +20,13 @@ Assembler::Assembler(const std::filesystem::path inFile, const std::filesystem::
 
 void Assembler::assemble()
 {
-    int instructionNum = 0;
-    int firstOpenAddress = 16;
-    
-    while (parser.hasMoreLines()) {
-        parser.advance();
-        switch (parser.instructionType())
-        {
-            case Parser::A_INSTRUCTION:
-                if (table.contains(parser.symbol())) {
-                    ofs << "0" << std::bitset<MAX_BITS>(table.getAddress(parser.symbol())).to_string() << std::endl;
-                }
-                else {
-                    // Is the symbol a number?
-                    try {
-                        int address = std::stoi(parser.symbol());
-                        ofs << "0" << std::bitset<MAX_BITS>(address).to_string() << std::endl;
-                    }
-                    // Not a number
-                    catch (const std::invalid_argument& e) {
-                        table.addEntry(parser.symbol(), firstOpenAddress);
-                        ofs << "0" << std::bitset<MAX_BITS>(firstOpenAddress).to_string() << std::endl;
-                        firstOpenAddress++;
-                    }
-                }
-
-                instructionNum++;
-                break;
-
-            case Parser::C_INSTRUCTION:
-                ofs << "111" << Code::comp(parser.comp()) << Code::dest(parser.dest()) << Code::jump(parser.jump()) << std::endl;;
-                instructionNum++;
-                break;
-
-            case Parser::L_INSTRUCTION:
-                table.addEntry(parser.symbol(), instructionNum);
-                break;
-        }
-    }
+    firstPass();
+    parser.reset();
+    secondPass();
 }
 
-void Assembler::initializeSymbolTable() {
+void Assembler::initializeSymbolTable()
+{
     table.addEntry("R0", 0);
     table.addEntry("R1", 1);
     table.addEntry("R2", 2);
@@ -85,4 +52,75 @@ void Assembler::initializeSymbolTable() {
     
     table.addEntry("SCREEN", 16384);
     table.addEntry("KBD", 24576);
+}
+
+void Assembler::firstPass()
+{
+    int instructionNum = 0;
+    std::vector<std::string> possibleVars;
+    while (parser.hasMoreLines()) {
+        parser.advance();
+        switch (parser.instructionType())
+        {
+            case Parser::A_INSTRUCTION:
+                if (!table.contains(parser.symbol())) {
+                    // Is the symbol a number?
+                    try {
+                        std::stoi(parser.symbol());
+                    }
+                    // Label or symbolic var
+                    catch (const std::invalid_argument& e) {
+                        possibleVars.push_back(parser.symbol());
+                    }
+                }
+
+                instructionNum++;
+                break;
+
+            case Parser::C_INSTRUCTION:
+                instructionNum++;
+                break;
+
+            case Parser::L_INSTRUCTION:
+                table.addEntry(parser.symbol(), instructionNum);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    unsigned int firstOpenAddress = 16;
+    for (std::string symbol : possibleVars) {
+        if (!table.contains(symbol)) {
+            table.addEntry(symbol, firstOpenAddress);
+            firstOpenAddress++;
+        }
+    }
+}
+
+void Assembler::secondPass()
+{
+    while (parser.hasMoreLines()) {
+        parser.advance();
+        switch (parser.instructionType())
+        {
+            case Parser::A_INSTRUCTION:
+                if (table.contains(parser.symbol())) {
+                    ofs << "0" << std::bitset<MAX_BITS>((unsigned int)table.getAddress(parser.symbol())).to_string() << std::endl;
+                }
+                // Symbol must be a number
+                else {
+                    ofs << "0" << std::bitset<MAX_BITS>((unsigned int)std::stoi(parser.symbol())).to_string() << std::endl;
+                }
+                break;
+
+            case Parser::C_INSTRUCTION:
+                ofs << "111" << Code::comp(parser.comp()) << Code::dest(parser.dest()) << Code::jump(parser.jump()) << std::endl;
+                break;
+
+            default:
+                break;
+        }
+    }
 }

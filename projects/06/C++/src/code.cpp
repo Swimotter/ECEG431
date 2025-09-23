@@ -5,7 +5,6 @@
 const std::string Code::dest(std::string destHuman)
 {
     std::string ret = "000";
-    // NOTE: Could just use a big switch table, maybe test for efficiency
     if (destHuman.find("A") != std::string::npos) {
         ret[0] = '1';
     }
@@ -89,23 +88,23 @@ const std::string Code::comp(std::string compHuman)
         return "1110111";
     }
     else if (compHuman == "M-1") {
-        return "110010";
+        return "1110010";
     }
     else if (compHuman == "D+M") {
-        return "000010";
+        return "1000010";
     }
     else if (compHuman == "D-M") {
-        return "010011";
+        return "1010011";
     }
     else if (compHuman == "M-D") {
-        return "000111";
+        return "1000111";
     }
     else if (compHuman == "D&M") {
-        return "000000";
+        return "1000000";
     }
     // (compHuman == "D|M")
     else {
-        return "010101";
+        return "1010101";
     }
 }
 

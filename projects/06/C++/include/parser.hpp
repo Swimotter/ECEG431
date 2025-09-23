@@ -8,12 +8,15 @@
 class Parser {
     public:
         enum InstructionType {
+            NONE,
             A_INSTRUCTION,
             C_INSTRUCTION,
             L_INSTRUCTION
         };
 
         Parser(std::filesystem::path file);
+
+        void reset();
 
         bool hasMoreLines();
         void advance();

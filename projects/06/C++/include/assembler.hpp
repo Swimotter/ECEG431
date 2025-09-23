@@ -20,4 +20,6 @@ class Assembler {
         std::ofstream ofs;
 
         void initializeSymbolTable();
+        void firstPass();
+        void secondPass();
 };
