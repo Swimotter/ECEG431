@@ -2,6 +2,7 @@ CXX := g++
 CXXFLAGS := -std=c++20 -Wall -O2
 
 SRC := $(wildcard src/*.cpp)
+INCLUDE_FOLDER := include
 
 PROGRAMS := ../add/Add ../max/Max ../max/MaxL ../pong/Pong ../pong/PongL ../rect/Rect ../rect/RectL
 ASSEMBLER := bin/assembler.exe
@@ -13,8 +14,8 @@ $(PROGRAMS): $(ASSEMBLER)
 	mv $@.hack $@-C++.hack
 
 $(ASSEMBLER): $(SRC)
-	mkdir $(dir $(ASSEMBLER))
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	mkdir -p $(dir $(ASSEMBLER))
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) $^ -o $@
 
 .PHONY: clean
 
