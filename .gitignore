@@ -9,3 +9,9 @@
 
 # Generated folders
 bin
+
+# Hack files
+*.hack
+
+# Ignore required project 5 hack files
+!projects/05/*.hack
