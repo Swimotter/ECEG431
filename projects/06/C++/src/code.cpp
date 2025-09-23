@@ -1,6 +1,7 @@
 #include "code.hpp"
 
 
+// NOTE: This doesn't handle input with errors
 std::string Code::dest(std::string destHuman)
 {
     std::string ret = "000";
@@ -18,122 +19,122 @@ std::string Code::dest(std::string destHuman)
     return ret;
 }
 
+// NOTE: This doesn't handle input with errors
 std::string Code::comp(std::string compHuman)
 {
-    switch (compHuman)
-    {
-        case "0":
-            return "0101010";
-
-        case "1":
-            return "0111111";
-
-        case "-1":
-            return "0111010";
-
-        case "D":
-            return "0001100";
-
-        case "A":
-            return "0110000";
-
-        case "!D":
-            return "0001101";
-
-        case "!A":
-            return "0110001"
-
-        case "-D":
-            return "0001111";
-
-        case "-A":
-            return "0110011";
-
-        case "D+1":
-            return "0011111";
-
-        case "A+1":
-            return "0110111";
-
-        case "D-1":
-            return "0001110";
-
-        case "A-1":
-            return "0110010";
-
-        case "D+A":
-            return "0000010";
-
-        case "D-A":
-            return "0010011";
-
-        case "A-D":
-            return "0000111";
-
-        case "D&A":
-            return "0000000";
-
-        case "D|A":
-            return "0010101";
-
-        case "M":
-            return "1110000"
-
-        case "!M":
-            return "1110001"
-
-        case "-M":
-            return "1110011"
-
-        case "M+1":
-            return "1110111"
-
-        case "M-1":
-            return "110010"
-
-        case "D+M":
-            return "000010"
-
-        case "D-M":
-            return "010011"
-
-        case "M-D":
-            return "000111"
-
-        case "D&M":
-            return "000000"
-
-        case "D|M":
-            return "010101"
+    if (compHuman == "0") {
+        return "0101010";
+    }
+    else if (compHuman == "1") {
+        return "0111111";
+    }
+    else if (compHuman == "-1") {
+        return "0111010";
+    }
+    else if (compHuman == "D") {
+        return "0001100";
+    }
+    else if (compHuman == "A") {
+        return "0110000";
+    }
+    else if (compHuman == "!D") {
+        return "0001101";
+    }
+    else if (compHuman == "!A") {
+        return "0110001";
+    }
+    else if (compHuman == "-D") {
+        return "0001111";
+    }
+    else if (compHuman == "-A") {
+        return "0110011";
+    }
+    else if (compHuman == "D+1") {
+        return "0011111";
+    }
+    else if (compHuman == "A+1") {
+        return "0110111";
+    }
+    else if (compHuman == "D-1") {
+        return "0001110";
+    }
+    else if (compHuman == "A-1") {
+        return "0110010";
+    }
+    else if (compHuman == "D+A") {
+        return "0000010";
+    }
+    else if (compHuman == "D-A") {
+        return "0010011";
+    }
+    else if (compHuman == "A-D") {
+        return "0000111";
+    }
+    else if (compHuman == "D&A") {
+        return "0000000";
+    }
+    else if (compHuman == "D|A") {
+        return "0010101";
+    }
+    else if (compHuman == "M") {
+        return "1110000";
+    }
+    else if (compHuman == "!M") {
+        return "1110001";
+    }
+    else if (compHuman == "-M") {
+        return "1110011";
+    }
+    else if (compHuman == "M+1") {
+        return "1110111";
+    }
+    else if (compHuman == "M-1") {
+        return "110010";
+    }
+    else if (compHuman == "D+M") {
+        return "000010";
+    }
+    else if (compHuman == "D-M") {
+        return "010011";
+    }
+    else if (compHuman == "M-D") {
+        return "000111";
+    }
+    else if (compHuman == "D&M") {
+        return "000000";
+    }
+    // (compHuman == "D|M")
+    else {
+        return "010101";
     }
 }
 
+// NOTE: This doesn't handle input with errors
 std::string Code::jump(std::string jumpHuman)
 {
-    switch (jumpHuman)
-    {
-        case "":
-            return "000";
-
-        case "JGT":
-            return "001";
-
-        case "JEQ":
-            return "010";
-
-        case "JGE":
-            return "011";
-
-        case "JLT":
-            return "100";
-
-        case "JNE":
-            return "101";
-
-        case "JLE":
-            return "110";
-
-        case "JMP":
-            return "111";
+    if (jumpHuman == "") {
+        return "000";
+    }
+    else if (jumpHuman == "JGT") {
+        return "001";
+    }
+    else if (jumpHuman == "JEQ") {
+        return "010";
+    }
+    else if (jumpHuman == "JGE") {
+        return "011";
+    }
+    else if (jumpHuman == "JLT") {
+        return "100";
+    }
+    else if (jumpHuman == "JNE") {
+        return "101";
+    }
+    else if (jumpHuman == "JLE") {
+        return "110";
+    }
+    // (jumpHuman == "JMP")
+    else {
+        return "111";
     }
 }
