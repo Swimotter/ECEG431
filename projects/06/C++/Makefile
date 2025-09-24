@@ -12,29 +12,34 @@ BUILT_IN_ASSEMBLER := Assembler.bat
 
 all: builddir $(ASSEMBLER)
 
-test: $(PROGRAMS)
+test: builddir $(PROGRAMS)
 
 $(PROGRAMS): $(ASSEMBLER)
-	$(ASSEMBLER) $@.asm
-	mv $@.hack $@-C++.hack
-	sleep 1s
-	$(BUILT_IN_ASSEMBLER) $@.asm
-	diff $@-C++.hack $@.hack
+	@echo "Testing $@.tst"
+	@$(ASSEMBLER) $@.asm
+	@mv $@.hack $@-C++.hack
+	@sleep 1s
+	@$(BUILT_IN_ASSEMBLER) $@.asm
+	@diff $@-C++.hack $@.hack
 
 $(ASSEMBLER): $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	@echo "Linking $(notdir $@)"
+	@$(CXX) $(CXXFLAGS) $^ -o $@
 
 bin/%.o: src/%.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
+	@echo "Compiling $(notdir $@)"
+	@$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
 
 .PHONY: clean builddir
 
 clean:
-	rm -rf bin/
-	rm -f ../add/*.hack
-	rm -f ../max/*.hack
-	rm -f ../pong/*.hack
-	rm -f ../rect/*.hack
+	@echo "Cleaning projects/06/C++"
+	@rm -rf bin/
+	@rm -f ../add/*.hack
+	@rm -f ../max/*.hack
+	@rm -f ../pong/*.hack
+	@rm -f ../rect/*.hack
 
 builddir:
-	mkdir -p $(dir $(ASSEMBLER))
+	@echo "Testing projects/06/C++"
+	@mkdir -p $(dir $(ASSEMBLER))

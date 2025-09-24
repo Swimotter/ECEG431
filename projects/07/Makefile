@@ -2,23 +2,32 @@
 SUBDIRS := C++
 
 all:
-	for dir in $(SUBDIRS); do \
+	@echo "Building projects/07"
+	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir all; \
 	done
 
 test:
-	for dir in $(SUBDIRS); do \
+	@echo "Testing projects/07"
+	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir test; \
 	done
 
 .PHONY: clean
 
 clean:
-	for dir in $(SUBDIRS); do \
+	@echo "Cleaning projects/07"
+	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir clean; \
 	done
 
-# 	rm -f ../add/*.hack
-# 	rm -f ../max/*.hack
-# 	rm -f ../pong/*.hack
-# 	rm -f ../rect/*.hack
+	@rm -f ../StackArithmetic/SimpleAdd/*.out
+	@rm -f ../StackArithmetic/SimpleAdd/*.asm
+	@rm -f ../StackArithmetic/StackTest/*.out
+	@rm -f ../StackArithmetic/StackTest/*.asm
+	@rm -f ../MemoryAccess/BasicTest/*.out
+	@rm -f ../MemoryAccess/BasicTest/*.asm
+	@rm -f ../MemoryAccess/PointerTest/*.out
+	@rm -f ../MemoryAccess/PointerTest/*.asm
+	@rm -f ../MemoryAccess/StaticTest/*.out
+	@rm -f ../MemoryAccess/StaticTest/*.asm

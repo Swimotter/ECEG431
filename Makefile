@@ -2,19 +2,22 @@ SUBDIRS := projects/00 projects/01 projects/02 projects/03 projects/04 projects/
 
 # Generates files without testing
 all:
-	for dir in $(SUBDIRS); do \
+	@echo "Building projects"
+	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir all; \
 	done
 
 # Generates files and runs tests
 test:
-	for dir in $(SUBDIRS); do \
+	@echo "Testing projects"
+	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir test; \
 	done
 
 .PHONY: clean
 
 clean:
-	for dir in $(SUBDIRS); do \
+	@echo "Cleaning projects"
+	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir clean; \
 	done

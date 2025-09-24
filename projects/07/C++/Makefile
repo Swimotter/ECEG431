@@ -15,29 +15,38 @@ all: builddir $(VM_TRANSLATOR)
 test: builddir $(PROGRAMS)
 
 $(PROGRAMS): $(VM_TRANSLATOR)
-	$(VM_TRANSLATOR) $@.vm
-	$(EMULATOR) $@.tst
+	@echo "Testing $@.tst"
+	@$(VM_TRANSLATOR) $@.vm
+	@OUTPUT="$(shell $(EMULATOR) $@.tst 2>&1)"; \
+	if echo "$$OUTPUT" | grep -q "failure"; then \
+		echo "$$OUTPUT from $@.tst" ; \
+		exit 1; \
+	fi
 
 $(VM_TRANSLATOR): $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	@echo "Linking $(notdir $@)"
+	@$(CXX) $(CXXFLAGS) $^ -o $@
 
 bin/%.o: src/%.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
+	@echo "Compiling $(notdir $@)"
+	@$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
 
 .PHONY: clean builddir
 
 clean:
-	rm -rf bin/
-	rm -f ../StackArithmetic/SimpleAdd/*.out
-	rm -f ../StackArithmetic/SimpleAdd/*.asm
-	rm -f ../StackArithmetic/StackTest/*.out
-	rm -f ../StackArithmetic/StackTest/*.asm
-	rm -f ../MemoryAccess/BasicTest/*.out
-	rm -f ../MemoryAccess/BasicTest/*.asm
-	rm -f ../MemoryAccess/PointerTest/*.out
-	rm -f ../MemoryAccess/PointerTest/*.asm
-	rm -f ../MemoryAccess/StaticTest/*.out
-	rm -f ../MemoryAccess/StaticTest/*.asm
+	@echo "Cleaning projects/07/C++"
+	@rm -rf bin/
+	@rm -f ../StackArithmetic/SimpleAdd/*.out
+	@rm -f ../StackArithmetic/SimpleAdd/*.asm
+	@rm -f ../StackArithmetic/StackTest/*.out
+	@rm -f ../StackArithmetic/StackTest/*.asm
+	@rm -f ../MemoryAccess/BasicTest/*.out
+	@rm -f ../MemoryAccess/BasicTest/*.asm
+	@rm -f ../MemoryAccess/PointerTest/*.out
+	@rm -f ../MemoryAccess/PointerTest/*.asm
+	@rm -f ../MemoryAccess/StaticTest/*.out
+	@rm -f ../MemoryAccess/StaticTest/*.asm
 
 builddir:
-	mkdir -p $(dir $(VM_TRANSLATOR))
+	@echo "Testing projects/07/C++"
+	@mkdir -p $(dir $(VM_TRANSLATOR))

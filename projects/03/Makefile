@@ -6,10 +6,16 @@ all:
 test: $(PROGRAMS)
 
 $(PROGRAMS):
-	$(SIMULATOR) $@.tst
+	@echo "Testing $@.tst"
+	@OUTPUT="$(shell $(SIMULATOR) $@.tst 2>&1)"; \
+	if echo "$$OUTPUT" | grep -q "failure"; then \
+		echo "$$OUTPUT from $@.tst" ; \
+		exit 1; \
+	fi
 
 .PHONY: clean
 
 clean:
-	rm -f a/*.out
-	rm -f b/*.out
+	@echo "Cleaning projects/03"
+	@rm -f a/*.out
+	@rm -f b/*.out
