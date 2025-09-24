@@ -27,7 +27,7 @@ bool Parser::isArithmetic() const
     );
 }
 
-Parser::Parser(std::filesystem::path file)
+Parser::Parser(const std::filesystem::path file)
 {
     ifs.open(file);
 }
@@ -91,8 +91,9 @@ const Parser::CommandType Parser::commandType()
 const std::string Parser::arg1() const
 {
     if (type == CommandType::C_PUSH || type == CommandType::C_POP) {
-        size_t end = line.find(" ");
-        return line.substr(0, end);
+        size_t start = line.find(" ") + 1;
+        size_t end = line.rfind(" ");
+        return line.substr(start, end - start);
     }
     else {
         return line;
@@ -101,6 +102,6 @@ const std::string Parser::arg1() const
 
 int Parser::arg2() const
 {
-    size_t start = line.find(" ") + 1;
-    return std::atoi(line.substr(start, line.length() - start + 1).c_str());
+    size_t start = line.find(" ", line.find(" ") + 1) + 1;
+    return std::atoi(line.substr(start, line.length() - start).c_str());
 }

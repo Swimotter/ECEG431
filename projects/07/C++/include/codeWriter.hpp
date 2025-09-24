@@ -18,12 +18,17 @@ class CodeWriter {
     private:
         std::ofstream ofs;
         
+        int badCodeCounter = 0;
+
+        void writeBinaryArithmetic();
+        void writeUnaryArithmetic();
+        void writeCompare(std::string comparison);
+
         void writePush(const std::string segment, const int index);
         void writePushDynamicSegment(const std::string segment, const int index);
         void writePushFixedSegment(const std::string segment, const int index);
         void writePushConstant(const int index);
         void writePushStack();
-        
 
         void writePop(const std::string segment, const int index);
         void writePopDynamicSegment(const std::string segment, const int index);

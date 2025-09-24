@@ -10,6 +10,108 @@ CodeWriter::CodeWriter(const std::filesystem::path file)
 
 void CodeWriter::writeArithmetic(const std::string command)
 {
+    if (command == "add") {
+        writeBinaryArithmetic();
+        /**
+         * M=M+D
+         */
+        ofs << "M=M+D" << std::endl;
+    }
+    else if (command == "sub") {
+        writeBinaryArithmetic();
+        /**
+         * M=M+D
+         */
+        ofs << "M=M-D" << std::endl;
+    }
+    else if (command == "neg") {
+        writeUnaryArithmetic();
+        /**
+         * M=-M
+         */
+        ofs << "M=-M" << std::endl;
+    }
+    // TODO: Implement
+    else if (command == "eq") {
+        writeBinaryArithmetic();
+        writeCompare("JEQ");
+    }
+    // TODO: Implement
+    else if (command == "gt") {
+        writeBinaryArithmetic();
+        writeCompare("JGT");
+    }
+    // TODO: Implement
+    else if (command == "lt") {
+        writeBinaryArithmetic();
+        writeCompare("JLT");
+    }
+    else if (command == "and") {
+        writeBinaryArithmetic();
+        /**
+         * M=D&M
+         */
+        ofs << "M=D&M" << std::endl;
+    }
+    else if (command == "or") {
+        writeBinaryArithmetic();
+        /**
+         * M=D|M
+         */
+        ofs << "M=D|M" << std::endl;
+    }
+    else if (command == "not") {
+        writeUnaryArithmetic();
+        /**
+         * M=!M
+         */
+        ofs << "M=!M" << std::endl;
+    }
+}
+
+// Note: This expects a new value to be pushed to the stack after
+void CodeWriter::writeUnaryArithmetic()
+{
+    /**
+     * @SP
+     * A=M-1
+     */
+    ofs << "@SP" << std::endl;
+    ofs << "A=M-1" << std::endl;
+}
+
+void CodeWriter::writeCompare(std::string comparison)
+{
+    /**
+     * I'm not even gunna bother writing this out, it's trash and doesn't
+     * deserve getting a clean comment until it doesn't just keep adding
+     * a psycopathic amount of jumps
+     */
+    ofs << "D=M-D" << std::endl;
+    ofs << "@TRUE." << badCodeCounter << std::endl;
+    ofs << "D;" << comparison << std::endl;
+    ofs << "@FALSE." << badCodeCounter << std::endl;
+    ofs << "D=0;JMP" << std::endl;
+    ofs << "(TRUE." << badCodeCounter << ")" << std::endl;
+    ofs << "D=-1" << std::endl;
+    ofs << "(FALSE." << badCodeCounter << ")" << std::endl;
+    ofs << "@SP" << std::endl;
+    ofs << "A=M-1" << std::endl;
+    ofs << "M=D" << std::endl;
+
+    badCodeCounter++;
+}
+
+// Note: This expects a new value to be pushed to the stack after
+void CodeWriter::writeBinaryArithmetic()
+{
+    writePopStack();
+    /**
+     * @SP
+     * A=M-1
+     */
+    ofs << "@SP" << std::endl;
+    ofs << "A=M-1" << std::endl;
 }
 
 void CodeWriter::writePushPop(const Parser::CommandType command, const std::string segment, const int index)
@@ -31,6 +133,9 @@ void CodeWriter::writePushPop(const Parser::CommandType command, const std::stri
 
 void CodeWriter::close()
 {
+    ofs << "(END)" << std::endl;
+    ofs << "@END" << std::endl;
+    ofs << "0;JMP" << std::endl;
     ofs.close();
 }
 
@@ -41,7 +146,7 @@ void CodeWriter::writePush(const std::string segment, const int index)
         segment == "this" ||
         segment == "that"
     ) {
-        static const std::unordered_map<const std::string, const std::string> segmentMap = {
+        static const std::unordered_map<std::string, std::string> segmentMap = {
             {"local", "LCL"},
             {"argument", "ARG"},
             {"this", "THIS"},
@@ -107,6 +212,9 @@ void CodeWriter::writePushFixedSegment(const std::string segment, const int inde
     else if (segment == "static") {
         address = STATIC_IDX + index;
     }
+    else {
+        return;
+    }
 
     /**
      * @{address}
@@ -137,7 +245,8 @@ void CodeWriter::writePushStack()
      * M=D
      */
     ofs << "@SP" << std::endl;
-    ofs << "AM=M+1" << std::endl;
+    ofs << "M=M+1" << std::endl;
+    ofs << "A=M-1" << std::endl;
     ofs << "M=D" << std::endl;
 }
 
@@ -148,7 +257,7 @@ void CodeWriter::writePop(const std::string segment, const int index)
         segment == "this" ||
         segment == "that"
     ) {
-        static const std::unordered_map<const std::string, const std::string> segmentMap = {
+        static const std::unordered_map<std::string, std::string> segmentMap = {
             {"local", "LCL"},
             {"argument", "ARG"},
             {"this", "THIS"},
@@ -219,6 +328,9 @@ void CodeWriter::writePopFixedSegment(const std::string segment, const int index
     else if (segment == "static") {
         address = STATIC_IDX + index;
     }
+    else {
+        return;
+    }
 
     writePopStack();
     /**
@@ -233,8 +345,7 @@ void CodeWriter::writePopStack()
 {
     /**
      * @SP
-     * M=M-1
-     * A=M+1
+     * AM=M-1
      * D=M
      */
     ofs << "@SP" << std::endl;

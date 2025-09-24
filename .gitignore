@@ -16,5 +16,8 @@ bin
 # Hack files
 *.hack
 
-# Ignore required project 5 hack files
+# Allow required project 5 hack files
 !projects/05/*.hack
+
+# Ignore project 7 generated asm files
+projects/07/**/*.asm

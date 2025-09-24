@@ -12,7 +12,7 @@ EMULATOR := CPUEmulator.bat
 
 all: builddir $(VM_TRANSLATOR)
 
-test: $(PROGRAMS)
+test: builddir $(PROGRAMS)
 
 $(PROGRAMS): $(VM_TRANSLATOR)
 	$(VM_TRANSLATOR) $@.vm
@@ -29,10 +29,15 @@ bin/%.o: src/%.cpp
 clean:
 	rm -rf bin/
 	rm -f ../StackArithmetic/SimpleAdd/*.out
+	rm -f ../StackArithmetic/SimpleAdd/*.asm
 	rm -f ../StackArithmetic/StackTest/*.out
+	rm -f ../StackArithmetic/StackTest/*.asm
 	rm -f ../MemoryAccess/BasicTest/*.out
+	rm -f ../MemoryAccess/BasicTest/*.asm
 	rm -f ../MemoryAccess/PointerTest/*.out
+	rm -f ../MemoryAccess/PointerTest/*.asm
 	rm -f ../MemoryAccess/StaticTest/*.out
+	rm -f ../MemoryAccess/StaticTest/*.asm
 
 builddir:
 	mkdir -p $(dir $(VM_TRANSLATOR))
