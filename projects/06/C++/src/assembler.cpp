@@ -62,7 +62,7 @@ void Assembler::firstPass()
         parser.advance();
         switch (parser.instructionType())
         {
-            case Parser::A_INSTRUCTION:
+            case Parser::InstructionType::A_INSTRUCTION:
                 if (!table.contains(parser.symbol())) {
                     // Is the symbol a number?
                     try {
@@ -77,11 +77,11 @@ void Assembler::firstPass()
                 instructionNum++;
                 break;
 
-            case Parser::C_INSTRUCTION:
+            case Parser::InstructionType::C_INSTRUCTION:
                 instructionNum++;
                 break;
 
-            case Parser::L_INSTRUCTION:
+            case Parser::InstructionType::L_INSTRUCTION:
                 table.addEntry(parser.symbol(), instructionNum);
                 break;
 
@@ -105,7 +105,7 @@ void Assembler::secondPass()
         parser.advance();
         switch (parser.instructionType())
         {
-            case Parser::A_INSTRUCTION:
+            case Parser::InstructionType::A_INSTRUCTION:
                 if (table.contains(parser.symbol())) {
                     ofs << "0" << std::bitset<MAX_BITS>((unsigned int)table.getAddress(parser.symbol())).to_string() << std::endl;
                 }
@@ -115,7 +115,7 @@ void Assembler::secondPass()
                 }
                 break;
 
-            case Parser::C_INSTRUCTION:
+            case Parser::InstructionType::C_INSTRUCTION:
                 ofs << "111" << Code::comp(parser.comp()) << Code::dest(parser.dest()) << Code::jump(parser.jump()) << std::endl;
                 break;
 
