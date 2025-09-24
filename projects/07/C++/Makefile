@@ -6,23 +6,20 @@ INCLUDE_FOLDER := include
 
 OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 
-# PROGRAMS := ../add/Add ../max/Max ../max/MaxL ../pong/Pong ../pong/PongL ../rect/Rect ../rect/RectL
-# ASSEMBLER := bin/assembler.exe
-# BUILT_IN_ASSEMBLER := Assembler.bat
+PROGRAMS := ../StackArithmetic/SimpleAdd/SimpleAdd ../StackArithmetic/StackTest/StackTest ../MemoryAccess/BasicTest/BasicTest ../MemoryAccess/PointerTest/PointerTest ../MemoryAccess/StaticTest/StaticTest
+VM_TRANSLATOR := bin/vm_translator.exe
+EMULATOR := CPUEmulator.bat
 
-all: builddir $(ASSEMBLER)
+all: builddir $(VM_TRANSLATOR)
 
 test: $(PROGRAMS)
 
-# $(PROGRAMS): $(ASSEMBLER)
-# 	$(ASSEMBLER) $@.asm
-# 	mv $@.hack $@-C++.hack
-# 	sleep 1s
-# 	$(BUILT_IN_ASSEMBLER) $@.asm
-# 	diff $@-C++.hack $@.hack
+$(PROGRAMS): $(VM_TRANSLATOR)
+	$(VM_TRANSLATOR) $@.vm
+	$(EMULATOR) $@.tst
 
-# $(ASSEMBLER): $(OBJS)
-# 	$(CXX) $(CXXFLAGS) $^ -o $@
+$(VM_TRANSLATOR): $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
 bin/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
@@ -31,10 +28,11 @@ bin/%.o: src/%.cpp
 
 clean:
 	rm -rf bin/
-	rm -f ../add/*.hack
-	rm -f ../max/*.hack
-	rm -f ../pong/*.hack
-	rm -f ../rect/*.hack
+	rm -f ../StackArithmetic/SimpleAdd/*.out
+	rm -f ../StackArithmetic/StackTest/*.out
+	rm -f ../MemoryAccess/BasicTest/*.out
+	rm -f ../MemoryAccess/PointerTest/*.out
+	rm -f ../MemoryAccess/StaticTest/*.out
 
-# builddir:
-# 	mkdir -p $(dir $(ASSEMBLER))
+builddir:
+	mkdir -p $(dir $(VM_TRANSLATOR))
