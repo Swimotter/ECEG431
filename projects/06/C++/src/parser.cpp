@@ -3,17 +3,6 @@
 #include <string>
 
 
-bool Parser::isWhiteSpace() const
-{
-    return line.find_first_not_of(" \t\n\v\f\r") == std::string::npos;
-}
-
-// NOTE: This only returns true if the entire line is a comment
-bool Parser::isComment() const
-{
-    return line.length() >= 2 && line.substr(line.find_first_not_of(" \t\n\v\f\r"), 2) == "//";
-}
-
 Parser::Parser(std::filesystem::path file)
 {
     ifs.open(file);
@@ -33,24 +22,30 @@ bool Parser::hasMoreLines()
 
 void Parser::advance()
 {
-    std::getline(ifs, line);
-    
-    bool isInstruction = !isWhiteSpace() && !isComment();
-
+    bool isInstruction = false;
     while (!isInstruction && hasMoreLines()) {
         std::getline(ifs, line);
-        isInstruction = !isWhiteSpace() && !isComment();
+
+        // Strip end line comments
+        size_t commentStart = line.find("//");
+        if (commentStart != std::string::npos) {
+            line = line.substr(0, commentStart);
+        }
+        
+        // Strip whitespace on ends
+        size_t firstNonWhitespace = line.find_first_not_of(" \t\n\v\f\r");
+        if (firstNonWhitespace != std::string::npos) {
+            size_t lastNonWhitespace = line.find_last_not_of(" \t\n\v\f\r");
+            line = line.substr(firstNonWhitespace, lastNonWhitespace - firstNonWhitespace + 1);
+        }
+        else {
+            line = "";
+        }
+
+        if (!line.empty()) {
+            isInstruction = true;
+        }
     }
-
-
-    // Strip end line comments
-    int commentStart = line.find("//");
-    line = line.substr(0, commentStart);
-    
-    // Strip whitespace on ends
-    int firstNonWhitespace = line.find_first_not_of(" \t\n\v\f\r");
-    int lastNonWhitespace = line.find_last_not_of(" \t\n\v\f\r");
-    line = line.substr(firstNonWhitespace, lastNonWhitespace - firstNonWhitespace + 1);
 }
 
 const Parser::InstructionType Parser::instructionType()
@@ -68,7 +63,12 @@ const Parser::InstructionType Parser::instructionType()
         
         // L-Instruction
         case '(':
-            type = InstructionType::L_INSTRUCTION;
+            if (line.back() == ')') {
+                type = InstructionType::L_INSTRUCTION;
+            }
+            else {
+                type = InstructionType::C_INSTRUCTION;
+            }
             break;
         
         // C-Instruction
@@ -104,23 +104,21 @@ const std::string Parser::dest() const
 
 const std::string Parser::comp() const
 {
-    size_t start = line.find("=");
-    if (start == std::string::npos) {
-        start = 0;
-    }
-    else {
-        start = start + 1;
+    std::string temp = line;
+
+    //remove dest part if exists
+    size_t equalPos = temp.find('=');
+    if (equalPos != std::string::npos) {
+        temp = temp.substr(equalPos + 1);
     }
 
-    size_t end = line.find(";");
-    if (end == std::string::npos) {
-        end = line.length();
-    }
-    else {
-        end = start + 1;
+    //remove jump part if exists
+    size_t semicolonPos = temp.find(';');
+    if (semicolonPos != std::string::npos) {
+        temp = temp.substr(0, semicolonPos);
     }
 
-    return line.substr(start, end - start);
+    return temp;
 }
 
 const std::string Parser::jump() const
@@ -130,9 +128,5 @@ const std::string Parser::jump() const
     if (start == std::string::npos) {
         return "";
     }
-    else {
-        start = start + 1;
-    }
-
-    return line.substr(start);
+    return line.substr(start + 1);
 }

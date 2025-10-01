@@ -21,3 +21,6 @@ bin
 
 # Ignore project 7 generated asm files
 projects/07/**/*.asm
+
+# Ignore file used for turning in projects
+exe.txt

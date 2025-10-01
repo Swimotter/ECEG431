@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "code.hpp"
 
@@ -16,6 +17,10 @@ Assembler::Assembler(const std::filesystem::path inFile, const std::filesystem::
     ofs.open(outFile);
 
     initializeSymbolTable();
+}
+
+bool Assembler::isNumber(const std::string& str) {
+    return !str.empty() && std::all_of(str.begin(), str.end(), ::isdigit);
 }
 
 void Assembler::assemble()
@@ -62,57 +67,43 @@ void Assembler::firstPass()
         parser.advance();
         switch (parser.instructionType())
         {
-            case Parser::InstructionType::A_INSTRUCTION:
-                if (!table.contains(parser.symbol())) {
-                    // Is the symbol a number?
-                    try {
-                        std::stoi(parser.symbol());
-                    }
-                    // Label or symbolic var
-                    catch (const std::invalid_argument& e) {
-                        possibleVars.push_back(parser.symbol());
-                    }
-                }
-
-                instructionNum++;
-                break;
-
-            case Parser::InstructionType::C_INSTRUCTION:
-                instructionNum++;
-                break;
-
             case Parser::InstructionType::L_INSTRUCTION:
                 table.addEntry(parser.symbol(), instructionNum);
                 break;
 
             default:
+                instructionNum++;
                 break;
-        }
-    }
-
-    unsigned int firstOpenAddress = 16;
-    for (std::string symbol : possibleVars) {
-        if (!table.contains(symbol)) {
-            table.addEntry(symbol, firstOpenAddress);
-            firstOpenAddress++;
         }
     }
 }
 
 void Assembler::secondPass()
 {
+    int availAddr = 16;
+
     while (parser.hasMoreLines()) {
         parser.advance();
         switch (parser.instructionType())
         {
+            int val;
             case Parser::InstructionType::A_INSTRUCTION:
-                if (table.contains(parser.symbol())) {
-                    ofs << "0" << std::bitset<MAX_BITS>((unsigned int)table.getAddress(parser.symbol())).to_string() << std::endl;
+                // Is the symbol a number?
+                if (isNumber(parser.symbol())) {
+                    val = std::stoi(parser.symbol());
                 }
-                // Symbol must be a number
+                // Label or symbolic var
                 else {
-                    ofs << "0" << std::bitset<MAX_BITS>((unsigned int)std::stoi(parser.symbol())).to_string() << std::endl;
+                    if (table.contains(parser.symbol())) {
+                        val = table.getAddress(parser.symbol());
+                    }
+                    else {
+                        val = availAddr;
+                        table.addEntry(parser.symbol(), availAddr);
+                        availAddr++;
+                    }
                 }
+                ofs << "0" << std::bitset<16>(val).to_string().substr(1) << std::endl;
                 break;
 
             case Parser::InstructionType::C_INSTRUCTION:

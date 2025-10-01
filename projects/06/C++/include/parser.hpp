@@ -30,7 +30,4 @@ class Parser {
         std::ifstream ifs;
         std::string line;
         InstructionType type;
-
-        bool isWhiteSpace() const;
-        bool isComment() const;
 };

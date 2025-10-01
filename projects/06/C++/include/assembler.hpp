@@ -22,4 +22,6 @@ class Assembler {
         void initializeSymbolTable();
         void firstPass();
         void secondPass();
+
+        bool isNumber(const std::string& str);
 };

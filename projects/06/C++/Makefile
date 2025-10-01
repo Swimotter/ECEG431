@@ -6,11 +6,13 @@ INCLUDE_FOLDER := include
 
 OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 
-PROGRAMS := ../add/Add ../max/Max ../max/MaxL ../pong/Pong ../pong/PongL ../rect/Rect ../rect/RectL
+PROGRAMS := ../add/Add ../max/MaxL ../max/Max ../pong/PongL ../pong/Pong ../rect/RectL ../rect/Rect
 ASSEMBLER := bin/assembler.exe
 BUILT_IN_ASSEMBLER := Assembler.bat
+SUBMIT_FILE := exe.txt
 
 all: builddir $(ASSEMBLER)
+	@echo $(ASSEMBLER) > $(SUBMIT_FILE)
 
 test: builddir $(PROGRAMS)
 
@@ -35,6 +37,7 @@ bin/%.o: src/%.cpp
 clean:
 	@echo "Cleaning projects/06/C++"
 	@rm -rf bin/
+	@rm -f $(SUBMIT_FILE)
 	@rm -f ../add/*.hack
 	@rm -f ../max/*.hack
 	@rm -f ../pong/*.hack
