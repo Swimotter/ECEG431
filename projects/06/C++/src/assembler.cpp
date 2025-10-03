@@ -103,7 +103,7 @@ void Assembler::secondPass()
                         availAddr++;
                     }
                 }
-                ofs << "0" << std::bitset<16>(val).to_string().substr(1) << std::endl;
+                ofs << "0" << std::bitset<MAX_BITS>(val).to_string() << std::endl;
                 break;
 
             case Parser::InstructionType::C_INSTRUCTION:
