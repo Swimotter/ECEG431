@@ -9,8 +9,10 @@ OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 PROGRAMS := ../StackArithmetic/SimpleAdd/SimpleAdd ../StackArithmetic/StackTest/StackTest ../MemoryAccess/BasicTest/BasicTest ../MemoryAccess/PointerTest/PointerTest ../MemoryAccess/StaticTest/StaticTest
 VM_TRANSLATOR := bin/vm_translator.exe
 EMULATOR := CPUEmulator.bat
+SUBMIT_FILE := exe.txt
 
 all: builddir $(VM_TRANSLATOR)
+	@echo $(VM_TRANSLATOR) > $(SUBMIT_FILE)
 
 test: builddir $(PROGRAMS)
 
