@@ -31,7 +31,5 @@ class Parser {
         std::string line;
         CommandType type;
 
-        bool isWhiteSpace() const;
-        bool isComment() const;
         bool isArithmetic() const;
 };

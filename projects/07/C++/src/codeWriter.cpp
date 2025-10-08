@@ -31,17 +31,14 @@ void CodeWriter::writeArithmetic(const std::string command)
          */
         ofs << "M=-M" << std::endl;
     }
-    // TODO: Implement
     else if (command == "eq") {
         writeBinaryArithmetic();
         writeCompare("JEQ");
     }
-    // TODO: Implement
     else if (command == "gt") {
         writeBinaryArithmetic();
         writeCompare("JGT");
     }
-    // TODO: Implement
     else if (command == "lt") {
         writeBinaryArithmetic();
         writeCompare("JLT");

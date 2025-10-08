@@ -1,17 +1,6 @@
 #include "parser.hpp"
 
 
-bool Parser::isWhiteSpace() const
-{
-    return line.find_first_not_of(" \t\n\v\f\r") == std::string::npos;
-}
-
-// NOTE: This only returns true if the entire line is a comment
-bool Parser::isComment() const
-{
-    return line.length() >= 2 && line.substr(line.find_first_not_of(" \t\n\v\f\r"), 2) == "//";
-}
-
 bool Parser::isArithmetic() const
 {
     return (
@@ -39,23 +28,29 @@ bool Parser::hasMoreLines()
 
 void Parser::advance()
 {
-    std::getline(ifs, line);
-    
-    bool isInstruction = !isWhiteSpace() && !isComment();
-
-    while (!isInstruction && hasMoreLines()) {
+    while (hasMoreLines()) {
         std::getline(ifs, line);
-        isInstruction = !isWhiteSpace() && !isComment();
+        
+        // Strip end line comments
+        size_t commentStart = line.find("//");
+        if (commentStart != std::string::npos) {
+            line = line.substr(0, commentStart);
+        }
+        
+        // Strip whitespace on ends
+        size_t firstNonWhitespace = line.find_first_not_of(" \t\n\v\f\r");
+        if (firstNonWhitespace != std::string::npos) {
+            size_t lastNonWhitespace = line.find_last_not_of(" \t\n\v\f\r");
+            line = line.substr(firstNonWhitespace, lastNonWhitespace - firstNonWhitespace + 1);
+        }
+        else {
+            line = "";
+        }
+        
+        if (!line.empty()) {
+            return;
+        }
     }
-
-    // Strip end line comments
-    int commentStart = line.find("//");
-    line = line.substr(0, commentStart);
-    
-    // Strip whitespace on ends
-    int firstNonWhitespace = line.find_first_not_of(" \t\n\v\f\r");
-    int lastNonWhitespace = line.find_last_not_of(" \t\n\v\f\r");
-    line = line.substr(firstNonWhitespace, lastNonWhitespace - firstNonWhitespace + 1);
 }
 
 const Parser::CommandType Parser::commandType()
