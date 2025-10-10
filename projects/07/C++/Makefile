@@ -38,6 +38,7 @@ bin/%.o: src/%.cpp
 clean:
 	@echo "Cleaning projects/07/C++"
 	@rm -rf bin/
+	@rm -f $(SUBMIT_FILE)
 	@rm -f ../StackArithmetic/SimpleAdd/*.out
 	@rm -f ../StackArithmetic/SimpleAdd/*.asm
 	@rm -f ../StackArithmetic/StackTest/*.out
