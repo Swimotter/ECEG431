@@ -1,12 +1,11 @@
 CXX := g++
 CXXFLAGS := -std=c++20 -Wall -O2
-
 SRCS := $(wildcard src/*.cpp)
 INCLUDE_FOLDER := include
 
 OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 
-PROGRAMS := ../StackArithmetic/SimpleAdd/SimpleAdd ../StackArithmetic/StackTest/StackTest ../MemoryAccess/BasicTest/BasicTest ../MemoryAccess/PointerTest/PointerTest ../MemoryAccess/StaticTest/StaticTest
+PROGRAMS := ../ProgramFlow/BasicLoop ../ProgramFlow/FibonacciSeries ../FunctionCalls/SimpleFunction ../FunctionCalls/FibonacciElement ../FunctionCalls/StaticsTest
 VM_TRANSLATOR := bin/vm_translator.exe
 EMULATOR := CPUEmulator.bat
 SUBMIT_FILE := exe.txt
@@ -14,16 +13,20 @@ SUBMIT_FILE := exe.txt
 all: builddir $(VM_TRANSLATOR)
 	@echo $(VM_TRANSLATOR) > $(SUBMIT_FILE)
 
-test: builddir $(PROGRAMS)
+test: translate
+	@for dir in $(PROGRAMS); do \
+		echo "Testing $$dir"; \
+		OUTPUT="$$( $(EMULATOR) "$$dir/$$(basename $$dir).tst" 2>&1 )"; \
+		echo "$$OUTPUT" | grep -q "success" || { echo "$$OUTPUT"; exit 1; }; \
+	done
 
-$(PROGRAMS): $(VM_TRANSLATOR)
-	@echo "Testing $@.tst"
-	@$(VM_TRANSLATOR) $@.vm
-	@OUTPUT="$(shell $(EMULATOR) $@.tst 2>&1)"; \
-	if echo "$$OUTPUT" | grep -q "failure"; then \
-		echo "$$OUTPUT from $@.tst" ; \
-		exit 1; \
-	fi
+translate: builddir $(PROGRAMS)
+
+.FORCE:
+
+$(PROGRAMS): $(VM_TRANSLATOR) .FORCE
+	@$(VM_TRANSLATOR) $@
+
 
 $(VM_TRANSLATOR): $(OBJS)
 	@echo "Linking $(notdir $@)"
@@ -33,22 +36,18 @@ bin/%.o: src/%.cpp
 	@echo "Compiling $(notdir $@)"
 	@$(CXX) $(CXXFLAGS) -I$(INCLUDE_FOLDER) -c $^ -o $@
 
-.PHONY: clean builddir
+.PHONY: clean clean-test builddir
 
-clean:
-	@echo "Cleaning projects/07/C++"
+clean: clean-test
+	@echo "Cleaning projects/08/C++"
 	@rm -rf bin/
-	@rm -f ../StackArithmetic/SimpleAdd/*.out
-	@rm -f ../StackArithmetic/SimpleAdd/*.asm
-	@rm -f ../StackArithmetic/StackTest/*.out
-	@rm -f ../StackArithmetic/StackTest/*.asm
-	@rm -f ../MemoryAccess/BasicTest/*.out
-	@rm -f ../MemoryAccess/BasicTest/*.asm
-	@rm -f ../MemoryAccess/PointerTest/*.out
-	@rm -f ../MemoryAccess/PointerTest/*.asm
-	@rm -f ../MemoryAccess/StaticTest/*.out
-	@rm -f ../MemoryAccess/StaticTest/*.asm
+
+clean-test:
+	@echo "Cleaning tests for projects/08"
+	@$(foreach dir, $(PROGRAMS), \
+		@rm -f $(dir)/*.out \
+		@rm -f $(dir)/*.asm \
+	)
 
 builddir:
-	@echo "Testing projects/07/C++"
 	@mkdir -p $(dir $(VM_TRANSLATOR))

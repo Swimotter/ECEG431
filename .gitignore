@@ -19,8 +19,9 @@ bin
 # Allow required project 5 hack files
 !projects/05/*.hack
 
-# Ignore project 7 generated asm files
+# Ignore project 7 and 8 generated asm files
 projects/07/**/*.asm
+projects/08/**/*.asm
 
 # Ignore file used for turning in projects
 exe.txt
