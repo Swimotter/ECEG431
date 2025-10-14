@@ -10,10 +10,10 @@
 
 class VMTranslator {
     public:
-        VMTranslator(const std::filesystem::path inFile, const std::filesystem::path outFile);
+        VMTranslator(const std::filesystem::path outFile, const bool needsBootstrap = true);
         ~VMTranslator();
 
-        void translate();
+        void translate(const std::filesystem::path& inFile);
 
     private:
         Parser parser;
