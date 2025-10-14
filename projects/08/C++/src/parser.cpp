@@ -64,18 +64,24 @@ const Parser::CommandType Parser::commandType()
     else if (line.find("pop") != std::string::npos) {
         type = CommandType::C_POP;
     }
-    // else if (line.find("LABEL") != std::string::npos) {
-    //     type = CommandType::C_LABEL;
-    // }
-    // else if (line.find("GOTO") != std::string::npos) {
-    //     type = CommandType::C_GOTO;
-    // }
-    // else if (line.find("RETURN") != std::string::npos) {
-    //     type = CommandType::C_RETURN;
-    // }
-    // else if (line.find("CALL") != std::string::npos) {
-    //     type = CommandType::C_CALL;
-    // }
+    else if (line.find("label") != std::string::npos) {
+        type = CommandType::C_LABEL;
+    }
+    else if (line.find("if-goto") != std::string::npos) {
+        type = CommandType::C_IF;
+    }
+    else if (line.find("goto") != std::string::npos) {
+        type = CommandType::C_GOTO;
+    }
+    else if (line.find("function") != std::string::npos) {
+        type = CommandType::C_FUNCTION;
+    }
+    else if (line.find("return") != std::string::npos) {
+        type = CommandType::C_RETURN;
+    }
+    else if (line.find("call") != std::string::npos) {
+        type = CommandType::C_CALL;
+    }
     else {
         type = CommandType::NONE;
     }
@@ -85,14 +91,9 @@ const Parser::CommandType Parser::commandType()
 
 const std::string Parser::arg1() const
 {
-    if (type == CommandType::C_PUSH || type == CommandType::C_POP) {
-        size_t start = line.find(" ") + 1;
-        size_t end = line.rfind(" ");
-        return line.substr(start, end - start);
-    }
-    else {
-        return line;
-    }
+    size_t start = line.find(" ") + 1;
+    size_t end = line.rfind(" ");
+    return line.substr(start, end - start);
 }
 
 int Parser::arg2() const
