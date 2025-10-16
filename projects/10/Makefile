@@ -1,13 +1,13 @@
 SUBDIRS := C++
 
 all:
-	@echo "Building projects/09"
+	@echo "Building projects/10"
 	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir all; \
 	done
 
 test:
-	@echo "Testing projects/09"
+	@echo "Testing projects/10"
 	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir test; \
 	done
@@ -15,7 +15,7 @@ test:
 .PHONY: clean
 
 clean:
-	@echo "Cleaning projects/09"
+	@echo "Cleaning projects/10"
 	@for dir in $(SUBDIRS); do \
 		"$(MAKE)" -C $$dir clean; \
 	done

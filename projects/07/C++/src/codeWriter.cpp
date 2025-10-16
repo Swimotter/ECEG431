@@ -20,7 +20,7 @@ void CodeWriter::writeArithmetic(const std::string command)
     else if (command == "sub") {
         writeBinaryArithmetic();
         /**
-         * M=M+D
+         * M=M-D
          */
         ofs << "M=M-D" << std::endl;
     }

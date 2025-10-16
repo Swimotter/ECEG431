@@ -5,9 +5,8 @@ INCLUDE_FOLDER := include
 
 OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 
-PROGRAMS := ../HelloWorld ../Average ../ConvertToBin ../ComplexArrays ../Fraction ../List ../Square ../Pong
+PROGRAMS := ../ArrayTest ../ExpressionLessSquare ../Square
 JACK_COMPILER := bin/jack_compiler.exe
-EMULATOR := JackCompiler.bat
 SUBMIT_FILE := exe.txt
 
 all: builddir $(JACK_COMPILER)
@@ -15,11 +14,10 @@ all: builddir $(JACK_COMPILER)
 
 test: translate
 	@for dir in $(PROGRAMS); do \
-		@$(EMULATOR) $(dir) \
-		@FILES = $(basename $(wildcard $(dir)/*.vm))
-		@$(foreach file, $(FILES), \
-			@diff $(file)-C++.vm $(file).vm \
-		) \
+		for file in $$dir/*.jack; do \
+			echo "Testing $$file"; \
+			diff $${file%.jack}-C++.xml $${file%.jack}.xml; \
+		done; \
 	done
 
 translate: builddir $(PROGRAMS)
@@ -28,10 +26,6 @@ translate: builddir $(PROGRAMS)
 
 $(PROGRAMS): $(JACK_COMPILER) .FORCE
 	@$(JACK_COMPILER) $@
-	@FILES = $(basename $(wildcard $@/*.vm))
-	@$(foreach dir, $(FILES), \
-		@mv $(dir).vm $(dir)-C++.vm \
-	)
 
 $(JACK_COMPILER): $(OBJS)
 	@echo "Linking $(notdir $@)"
@@ -44,13 +38,13 @@ bin/%.o: src/%.cpp
 .PHONY: clean clean-test builddir
 
 clean: clean-test
-	@echo "Cleaning projects/09/C++"
+	@echo "Cleaning projects/10/C++"
 	@rm -rf bin/
 
 clean-test:
-	@echo "Cleaning tests for projects/08"
+	@echo "Cleaning tests for projects/10"
 	@$(foreach dir, $(PROGRAMS), \
-		@rm -f $(dir)/*.vm \
+		@rm -f $(dir)/*-C++.xml \
 	)
 
 builddir:
