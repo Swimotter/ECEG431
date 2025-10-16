@@ -1,8 +1,13 @@
 #include "compilationEngine.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
+
+constexpr std::initializer_list<char> op = {'+', '-', '*', '/', '&', '|', '<', '>', '='};
+constexpr std::initializer_list<char> unaryOp = {'-', '~'};
+constexpr std::initializer_list<JackTokenizer::Keyword> keywordConstant = {JackTokenizer::Keyword::TRUE, JackTokenizer::Keyword::FALSE, JackTokenizer::Keyword::NULL_TOKEN, JackTokenizer::Keyword::THIS};
 
 CompilationEngine::CompilationEngine(const std::filesystem::path& inFile, const std::filesystem::path& outFile) : tokenizer(inFile)
 {
@@ -14,41 +19,26 @@ void CompilationEngine::compileClass()
     compileOpenTag("class", true);
 
     // 'class'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::CLASS) {
-        throw JackCompilationException("class", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::CLASS);
 
     // className
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-        throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-    }
-    className = tokenizer.identifier();
-    compileIdentifier();
+    expectIdentifier();
 
     // '{'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "{") {
-        throw JackCompilationException("{", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('{');
 
     // classVarDec*
-    for (std::string token; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
-        (tokenizer.keyword(token) == JackTokenizer::Keyword::STATIC ||
-         tokenizer.keyword(token) == JackTokenizer::Keyword::FIELD);) {
+    while (peekKeyword({JackTokenizer::Keyword::STATIC, JackTokenizer::Keyword::FIELD})) {
         compileClassVarDec();
     }
     
     // subroutineDec*
-    for (std::string token; token = tokenizer.peek(), isSubroutineDec(token);) {
+    while (peekKeyword({JackTokenizer::Keyword::CONSTRUCTOR, JackTokenizer::Keyword::FUNCTION, JackTokenizer::Keyword::METHOD})) {
         compileSubroutine();
     }
 
     // '}'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "}") {
-        throw JackCompilationException("}", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('}');
     
     compileCloseTag("class");
 }
@@ -58,48 +48,25 @@ void CompilationEngine::compileClassVarDec()
     compileOpenTag("classVarDec", true);
 
     // 'static' | 'field'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || (tokenizer.keyword() != JackTokenizer::Keyword::STATIC && tokenizer.keyword() != JackTokenizer::Keyword::FIELD)) {
-        throw JackCompilationException(std::vector<std::string>{"static", "field"}, token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword({JackTokenizer::Keyword::STATIC, JackTokenizer::Keyword::FIELD});
 
     // type
-    if (std::string token = tokenizer.advance(); isType()) {
-        compileKeyword();
-    }
-    else if (tokenizer.tokenType() == JackTokenizer::TokenType::IDENTIFIER) {
-        compileIdentifier();
-    }
-    else {
-        throw JackCompilationException({"int", "char", "boolean", "identifier"}, tokenizer.token(), tokenizer.line(), tokenizer.col());
-    }
+    expectTypeOrIdentifier();
 
     // varName
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-        throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-    }
-    compileIdentifier();
+    expectIdentifier();
 
     // (',' varName)*
-    for (std::string token; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ",";) {
+    while (peekSymbol(',')) {
         // ','
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ",") {
-            throw JackCompilationException(",", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(',');
 
         // varName
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-            throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-        }
-        compileIdentifier();
+        expectIdentifier();
     }
 
     // ';'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ";") {
-        throw JackCompilationException(";", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(';');
 
     compileCloseTag("classVarDec");
 }
@@ -109,13 +76,13 @@ void CompilationEngine::compileSubroutine()
     compileOpenTag("subroutineDec", true);
 
     // 'constructor' | 'function' | 'method'
-    if (std::string token = tokenizer.advance(); !isSubroutineDec()) {
-        throw JackCompilationException({"constructor", "function", "method"}, token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword({JackTokenizer::Keyword::CONSTRUCTOR, JackTokenizer::Keyword::FUNCTION, JackTokenizer::Keyword::METHOD});
 
     // 'void' | type
-    if (std::string token = tokenizer.advance(); (tokenizer.tokenType() == JackTokenizer::TokenType::KEYWORD && tokenizer.keyword() == JackTokenizer::Keyword::VOID) || isType()) {
+    if (std::string token = tokenizer.advance(); (tokenizer.tokenType() == JackTokenizer::TokenType::KEYWORD && tokenizer.keyword() == JackTokenizer::Keyword::VOID) || (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
+        (JackTokenizer::keyword(token) == JackTokenizer::Keyword::INT ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::CHAR ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::BOOLEAN))) {
         compileKeyword();
     }
     else if (tokenizer.tokenType() == JackTokenizer::TokenType::IDENTIFIER) {
@@ -126,25 +93,16 @@ void CompilationEngine::compileSubroutine()
     }
 
     // suburoutineName
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-        throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-    }
-    compileIdentifier();
+    expectIdentifier();
 
     // '('
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-        throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('(');
 
     // parameterList
     compileParameterList();
 
     // ')'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-        throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(')');
 
     // subroutineBody
     compileSubroutineBody();
@@ -157,48 +115,24 @@ void CompilationEngine::compileParameterList()
     compileOpenTag("parameterList", true);
 
     // ((type varName)(, type varName)*)?
-    for (std::string token; token = tokenizer.peek(), isType(token);) {
+    std::string token;
+    if (peekKeyword({JackTokenizer::Keyword::INT, JackTokenizer::Keyword::CHAR, JackTokenizer::Keyword::BOOLEAN}, &token) || JackTokenizer::tokenType(token) == JackTokenizer::TokenType::IDENTIFIER) {
         // type
-        if (token = tokenizer.advance(); isType(token)) {
-            compileKeyword();
-        }
-        else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::IDENTIFIER) {
-            compileIdentifier();
-        }
-        else {
-            throw JackCompilationException({"int", "char", "boolean", "identifier"}, token, tokenizer.line(), tokenizer.col(), false);
-        }
+        expectTypeOrIdentifier();
 
         // varName
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-            throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-        }
-        compileIdentifier();
+        expectIdentifier();
 
         // (, type varName)*
-        for (; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ",";) {
+        while (peekSymbol(',')) {
             // ,
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ",") {
-                throw JackCompilationException(",", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol(',');
 
             // type
-            if (token = tokenizer.advance(); isType(token)) {
-                compileKeyword();
-            }
-            else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::IDENTIFIER) {
-                compileIdentifier();
-            }
-            else {
-                throw JackCompilationException({"int", "char", "boolean", "identifier"}, token, tokenizer.line(), tokenizer.col(), false);
-            }
+            expectTypeOrIdentifier();
 
             // varName
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-                throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-            }
-            compileIdentifier();
+            expectIdentifier();
         }
     }
 
@@ -210,13 +144,10 @@ void CompilationEngine::compileSubroutineBody()
     compileOpenTag("subroutineBody", true);
 
     // '{'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "{") {
-        throw JackCompilationException("{", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('{');
 
     // varDec*
-    for (std::string token; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD && tokenizer.keyword(token) == JackTokenizer::Keyword::VAR;) {
+    while (peekKeyword(JackTokenizer::Keyword::VAR)) {
         compileVarDec();
     }
 
@@ -224,10 +155,7 @@ void CompilationEngine::compileSubroutineBody()
     compileStatements();
 
     // '}'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "}") {
-        throw JackCompilationException("}", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('}');
 
     compileCloseTag("subroutineBody");
 }
@@ -237,48 +165,25 @@ void CompilationEngine::compileVarDec()
     compileOpenTag("varDec", true);
 
     // 'var'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::VAR) {
-        throw JackCompilationException("var", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::VAR);
 
     // type
-    if (std::string token = tokenizer.advance(); isType()) {
-        compileKeyword();
-    }
-    else if (tokenizer.tokenType() == JackTokenizer::TokenType::IDENTIFIER) {
-        compileIdentifier();
-    }
-    else {
-        throw JackCompilationException({"int", "char", "boolean", "identifier"}, tokenizer.token(), tokenizer.line(), tokenizer.col());
-    }
+    expectTypeOrIdentifier();
 
     // varName
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-        throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-    }
-    compileIdentifier();
+    expectIdentifier();
 
     // (',' type varName)*
-    for (std::string token; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ",";) {
+    while (peekSymbol(',')) {
         // ','
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ",") {
-            throw JackCompilationException(",", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(',');
 
         // varName
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-            throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-        }
-        compileIdentifier();
+        expectIdentifier();
     }
 
     // ';'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ";") {
-        throw JackCompilationException(";", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(';');
     
     compileCloseTag("varDec");
 }
@@ -288,9 +193,10 @@ void CompilationEngine::compileStatements()
     compileOpenTag("statements", true);
     
     // statement*
-    for (std::string token; token = tokenizer.peek(), isStatement(token);) {
+    std::string token;
+    while (peekKeyword({JackTokenizer::Keyword::LET, JackTokenizer::Keyword::IF, JackTokenizer::Keyword::WHILE, JackTokenizer::Keyword::DO, JackTokenizer::Keyword::RETURN}, &token)) {
         // letStatement | ifStatement | whileStatement | doStatement | returnStatement
-        switch (tokenizer.keyword(token)) {
+        switch (JackTokenizer::keyword(token)) {
             case JackTokenizer::Keyword::LET:
                 compileLet();
                 break;
@@ -324,49 +230,31 @@ void CompilationEngine::compileLet()
     compileOpenTag("letStatement", true);
 
     // 'let'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::LET) {
-        throw JackCompilationException("let", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::LET);
 
     // varName
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-        throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
-    }
-    compileIdentifier();
+    expectIdentifier();
 
     // ('[' expression ']')?
-    for (std::string token; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "[";) {
+    while (peekSymbol('[')) {
         // '['
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "[") {
-            throw JackCompilationException("[", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('[');
 
         // expression
         compileExpression();
 
         // ']'
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "]") {
-            throw JackCompilationException("]", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(']');
     }
 
     // '='
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "=") {
-        throw JackCompilationException("=", tokenizer.token(), tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('=');
 
     // expression
     compileExpression();
     
     // ';'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ";") {
-        throw JackCompilationException(";", tokenizer.token(), tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(';');
 
     compileCloseTag("letStatement");
 }
@@ -376,63 +264,39 @@ void CompilationEngine::compileIf()
     compileOpenTag("ifStatement", true);
 
     // 'if'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::IF) {
-        throw JackCompilationException("if", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::IF);
 
     // '('
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-        throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('(');
 
     // expression
     compileExpression();
 
     // ')'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-        throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(')');
 
     // '{'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "{") {
-        throw JackCompilationException("{", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('{');
 
     // expression
     compileStatements();
 
     // '}'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "}") {
-        throw JackCompilationException("}", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('}');
 
     // ('else' '{' statements '}')?
-    for (std::string token; token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD && tokenizer.keyword(token) == JackTokenizer::Keyword::ELSE;) {
+    while (peekKeyword(JackTokenizer::Keyword::ELSE)) {
         // 'else'
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::ELSE) {
-            throw JackCompilationException("else", token, tokenizer.line(), tokenizer.col());
-        }
-        compileKeyword();
+        expectKeyword(JackTokenizer::Keyword::ELSE);
 
         // '{'
-        if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "{") {
-            throw JackCompilationException("{", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('{');
 
         // expression
         compileStatements();
 
         // '}'
-        if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "}") {
-            throw JackCompilationException("}", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('}');
     }
 
     compileCloseTag("ifStatement");
@@ -443,40 +307,25 @@ void CompilationEngine::compileWhile()
     compileOpenTag("whileStatement", true);
 
     // 'while'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::WHILE) {
-        throw JackCompilationException("while", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::WHILE);
 
     // '('
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-        throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('(');
 
     // expression
     compileExpression();
 
     // ')'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-        throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(')');
     
     // '{'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "{") {
-        throw JackCompilationException("{", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('{');
 
     // expression
     compileStatements();
 
     // '}'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "}") {
-        throw JackCompilationException("}", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol('}');
 
     compileCloseTag("whileStatement");
 }
@@ -486,68 +335,42 @@ void CompilationEngine::compileDo()
     compileOpenTag("doStatement", true);
 
     // 'do'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::DO) {
-        throw JackCompilationException("do", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::DO);
     
     // NOTE: compile expression handles the weird subroutineCall as one of it's cases
     // subroutineName | (className | varName)
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-        throw JackCompilationException("identifier", tokenizer.token(), tokenizer.line(), tokenizer.col(), false);
-    }
-    compileIdentifier();
+    expectIdentifier();
 
     // ('(' expressionList ')') | ('.' subroutineName '(' expressionList ')')
-    if (std::string token = tokenizer.peek(); tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") {
+    if (std::string token = tokenizer.peek(); JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") {
         // '('
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-            throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('(');
 
         // expressionList
         compileExpressionList();
 
         // ')'
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-            throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(')');
     }
-    else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ".") {
+    else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ".") {
         // '.'
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ".") {
-            throw JackCompilationException(".", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('.');
 
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-            throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col());
-        }
-        compileIdentifier();
+        // subroutineName
+        expectIdentifier();
         
         // '('
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-            throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('(');
 
         // expressionList
         compileExpressionList();
 
         // ')'
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-            throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(')');
     }
 
     // ';'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ";") {
-        throw JackCompilationException(";", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(';');
 
     compileCloseTag("doStatement");
 }
@@ -557,21 +380,26 @@ void CompilationEngine::compileReturn()
     compileOpenTag("returnStatement", true);
 
     // 'return'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || tokenizer.keyword() != JackTokenizer::Keyword::RETURN) {
-        throw JackCompilationException("return", token, tokenizer.line(), tokenizer.col());
-    }
-    compileKeyword();
+    expectKeyword(JackTokenizer::Keyword::RETURN);
     
     // expression?
-    for (std::string token; token = tokenizer.peek(), isExpression(token);) {
+    if (std::string token; token = tokenizer.peek(), JackTokenizer::tokenType(token) == JackTokenizer::TokenType::INT_CONST ||
+        JackTokenizer::tokenType(token) == JackTokenizer::TokenType::STRING_CONST ||
+        (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
+            (JackTokenizer::keyword(token) == JackTokenizer::Keyword::TRUE ||
+            JackTokenizer::keyword(token) == JackTokenizer::Keyword::FALSE ||
+            JackTokenizer::keyword(token) == JackTokenizer::Keyword::NULL_TOKEN ||
+            JackTokenizer::keyword(token) == JackTokenizer::Keyword::THIS)) ||
+        JackTokenizer::tokenType(token) == JackTokenizer::TokenType::IDENTIFIER ||
+        (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") ||
+        (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL &&
+            (JackTokenizer::symbol(token) == '-' ||
+            JackTokenizer::symbol(token) == '~'))) {
         compileExpression();
     }
 
     // ';'
-    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ";") {
-        throw JackCompilationException(";", token, tokenizer.line(), tokenizer.col());
-    }
-    compileSymbol();
+    expectSymbol(';');
     
     compileCloseTag("returnStatement");
 }
@@ -584,12 +412,9 @@ void CompilationEngine::compileExpression()
     compileTerm();
 
     // (op term)*
-    for (std::string token; token = tokenizer.peek(), isOp(token);) {
+    while (peekSymbol(op)) {
         // op
-        if (token = tokenizer.advance(); !isOp()) {
-            throw JackCompilationException({"+", "-", "*", "/", "&", "|", "<", ">", "="}, token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(op);
 
         // term
         compileTerm();
@@ -603,123 +428,84 @@ void CompilationEngine::compileTerm()
     compileOpenTag("term", true);
 
     // integerConstant | stringConstant | keywordConstant | varName | varname '[' expression ']' | '(' expression ')' | unaryOp term | subroutineCall
-    if (std::string token = tokenizer.peek(); tokenizer.tokenType(token) == JackTokenizer::TokenType::INT_CONST) {
+    if (std::string token = tokenizer.peek(); JackTokenizer::tokenType(token) == JackTokenizer::TokenType::INT_CONST) {
         // integerConstant
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::INT_CONST) {
-            throw JackCompilationException("integerConstant", tokenizer.token(), tokenizer.line(), tokenizer.col(), false);
-        }
-        compileIntVal();
+        expectIntConst();
     }
-    else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::STRING_CONST) {
+    else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::STRING_CONST) {
         // stringConstant
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::STRING_CONST) {
-            throw JackCompilationException("stringConstant", tokenizer.token(), tokenizer.line(), tokenizer.col(), false);
-        }
-        compileStringVal();
+        expectStringConst();
     }
-    else if (isKeywordConstant(token)) {
+    else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
+        (JackTokenizer::keyword(token) == JackTokenizer::Keyword::TRUE ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::FALSE ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::NULL_TOKEN ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::THIS)) {
         // keywordConstant
-        if (token = tokenizer.advance(); !isKeywordConstant()) {
-            throw JackCompilationException("keywordConstant", tokenizer.token(), tokenizer.line(), tokenizer.col(), false);
-        }
-        compileKeyword();
+        expectKeyword(keywordConstant);
     }
-    else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::IDENTIFIER) {
+    else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::IDENTIFIER) {
         // varName | subroutineName | (className | varName)
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-            throw JackCompilationException("identifier", tokenizer.token(), tokenizer.line(), tokenizer.col(), false);
-        }
-        compileIdentifier();
+        expectIdentifier();
 
         // ('[' expression ']') | ('(' expressionList ')') | ('.' subroutineName '(' expressionList ')')
-        if (token = tokenizer.peek(); tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "[") {
+        if (token = tokenizer.peek(); JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "[") {
             // '['
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "[") {
-                throw JackCompilationException("[", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol('[');
 
             // expression
             compileExpression();
 
             // ']'
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "]") {
-                throw JackCompilationException("]", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol(']');
         }
-        else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") {
+        else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") {
             // '('
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-                throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol('(');
 
             // expressionList
             compileExpression();
 
             // ')'
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-                throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol(')');
         }
-        else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ".") {
+        else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ".") {
             // '.'
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ".") {
-                throw JackCompilationException(".", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol('.');
 
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
-                throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col());
-            }
-            compileIdentifier();
+            expectIdentifier();
             
             // '('
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-                throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol('(');
 
             // expressionList
             compileExpressionList();
 
             // ')'
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-                throw JackCompilationException(")", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol(')');
         }
     }
-    else if (tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") {
+    else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") {
         // '('
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != "(") {
-            throw JackCompilationException("(", token, tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol('(');
 
         // expression
         compileExpression();
 
         // ')'
-        if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ")") {
-            throw JackCompilationException(")", tokenizer.token(), tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(')');
     }
-    else if (isUnaryOp(token)) {
+    else if (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL &&
+        (JackTokenizer::symbol(token) == '-' ||
+        JackTokenizer::symbol(token) == '~')) {
         // unaryOp
-        if (token = tokenizer.advance(); !isUnaryOp()) {
-            throw JackCompilationException(std::vector<std::string>{"-", "~"}, tokenizer.token(), tokenizer.line(), tokenizer.col());
-        }
-        compileSymbol();
+        expectSymbol(unaryOp);
 
         // term
         compileTerm();
     }
     else {
-        throw JackCompilationException({"integer", "string", "true", "false", "null", "this", "varName", "(", "-", "~", "subroutineCall"}, tokenizer.token(), tokenizer.line(), tokenizer.col());
+        throw JackCompilationException({"integerConstant", "stringConstant", "keywordConstant", "varName", "varname '[' expression ']'", "'(' expression ')'", "unaryOp term", "subroutineCall"}, token, tokenizer.line(), tokenizer.col());
     }
 
     compileCloseTag("term");
@@ -732,19 +518,27 @@ int CompilationEngine::compileExpressionList()
     compileOpenTag("expressionList", true);
 
     // (expression (',' expression)*)?
-    for (std::string token; token = tokenizer.peek(), isExpression(token);) {
+    if (std::string token; token = tokenizer.peek(), JackTokenizer::tokenType(token) == JackTokenizer::TokenType::INT_CONST ||
+        JackTokenizer::tokenType(token) == JackTokenizer::TokenType::STRING_CONST ||
+        (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
+            (JackTokenizer::keyword(token) == JackTokenizer::Keyword::TRUE ||
+            JackTokenizer::keyword(token) == JackTokenizer::Keyword::FALSE ||
+            JackTokenizer::keyword(token) == JackTokenizer::Keyword::NULL_TOKEN ||
+            JackTokenizer::keyword(token) == JackTokenizer::Keyword::THIS)) ||
+        JackTokenizer::tokenType(token) == JackTokenizer::TokenType::IDENTIFIER ||
+        (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") ||
+        (JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL &&
+            (JackTokenizer::symbol(token) == '-' ||
+            JackTokenizer::symbol(token) == '~'))) {
         // expression
         compileExpression();
 
         expressions++;
 
         // (',' expression)*
-        for (;token = tokenizer.peek(), tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == ",";) {
+        while (peekSymbol(',')) {
             // ','
-            if (token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || token != ",") {
-                throw JackCompilationException(",", token, tokenizer.line(), tokenizer.col());
-            }
-            compileSymbol();
+            expectSymbol(',');
 
             // expression
             compileExpression();
@@ -758,12 +552,114 @@ int CompilationEngine::compileExpressionList()
     return expressions;
 }
 
+void CompilationEngine::expectKeyword(JackTokenizer::Keyword expected)
+{
+    return expectKeyword({expected});
+}
+
+void CompilationEngine::expectKeyword(std::initializer_list<JackTokenizer::Keyword> expected)
+{
+    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::KEYWORD || std::find(expected.begin(), expected.end(), tokenizer.keyword()) == expected.end()) {
+        std::vector<std::string> expectedStrs;
+        for (JackTokenizer::Keyword keyword : expected) {
+            expectedStrs.push_back(JackTokenizer::keywordToString(keyword));
+        }
+
+        throw JackCompilationException(expectedStrs, token, tokenizer.line(), tokenizer.col());
+    }
+    compileKeyword();
+}
+
+void CompilationEngine::expectSymbol(char expected)
+{
+    return expectSymbol({expected});
+}
+
+void CompilationEngine::expectSymbol(std::initializer_list<char> expected)
+{
+    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::SYMBOL || std::find(expected.begin(), expected.end(), tokenizer.symbol()) == expected.end()) {
+        std::vector<std::string> expectedStrs;
+        for (char symbol : expected) {
+            expectedStrs.push_back(std::string(1, symbol));
+        }
+
+        throw JackCompilationException(expectedStrs, token, tokenizer.line(), tokenizer.col());
+    }
+    compileSymbol();
+}
+
+void CompilationEngine::expectIdentifier()
+{
+    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::IDENTIFIER) {
+        throw JackCompilationException("identifier", token, tokenizer.line(), tokenizer.col(), false);
+    }
+    compileIdentifier();
+}
+
+void CompilationEngine::expectIntConst()
+{
+    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::INT_CONST) {
+        throw JackCompilationException("integerConstant", token, tokenizer.line(), tokenizer.col(), false);
+    }
+    compileIntVal();
+}
+
+void CompilationEngine::expectStringConst()
+{
+    if (std::string token = tokenizer.advance(); tokenizer.tokenType() != JackTokenizer::TokenType::STRING_CONST) {
+        throw JackCompilationException("stringConstant", token, tokenizer.line(), tokenizer.col(), false);
+    }
+    compileStringVal();
+}
+
+void CompilationEngine::expectTypeOrIdentifier()
+{
+    if (std::string token = tokenizer.advance(); JackTokenizer::tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
+        (JackTokenizer::keyword(token) == JackTokenizer::Keyword::INT ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::CHAR ||
+        JackTokenizer::keyword(token) == JackTokenizer::Keyword::BOOLEAN)) {
+        compileKeyword();
+    }
+    else if (tokenizer.tokenType() == JackTokenizer::TokenType::IDENTIFIER) {
+        compileIdentifier();
+    }
+    else {
+        throw JackCompilationException({"int", "char", "boolean", "identifier"}, token, tokenizer.line(), tokenizer.col());
+    }
+}
+
+bool CompilationEngine::peekKeyword(JackTokenizer::Keyword expected, std::string* const token)
+{
+    return peekKeyword({expected}, token);
+}
+
+bool CompilationEngine::peekKeyword(std::initializer_list<JackTokenizer::Keyword> expected, std::string* const tokenOut)
+{
+    std::string token = tokenizer.peek();
+    if (tokenOut) {
+        *tokenOut = token;
+    }
+    return JackTokenizer::tokenType(token) == JackTokenizer::TokenType::KEYWORD && std::find(expected.begin(), expected.end(), JackTokenizer::keyword(token)) != expected.end();
+}
+
+bool CompilationEngine::peekSymbol(char expected, std::string* const token)
+{
+    return peekSymbol({expected}, token);
+}
+
+bool CompilationEngine::peekSymbol(std::initializer_list<char> expected, std::string* const tokenOut)
+{
+    std::string token = tokenizer.peek();
+    if (tokenOut) {
+        *tokenOut = token;
+    }
+    return JackTokenizer::tokenType(token) == JackTokenizer::TokenType::SYMBOL && std::find(expected.begin(), expected.end(), JackTokenizer::symbol(token)) != expected.end();
+}
+
 void CompilationEngine::writeIndent()
 {
-    for (int i = 0; i < indentLevel; i++) {
-        // NOTE: We use 2 spaces per .NET defaults
-        ofs << "  ";
-    }
+    // NOTE: We use 2 spaces per .NET defaults
+    ofs << std::string(indentLevel * 2, ' ');
 }
 
 void CompilationEngine::compileOpenTag(const std::string &tag, bool trailingNewLine)
@@ -937,106 +833,4 @@ void CompilationEngine::compileStringVal()
     compileOpenTag("stringConstant");
     ofs << " " << tokenizer.stringVal() << " ";
     compileCloseTag("stringConstant", false);
-}
-
-bool CompilationEngine::isSubroutineDec() const
-{
-    return isSubroutineDec(tokenizer.token());
-}
-
-bool CompilationEngine::isSubroutineDec(const std::string &token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
-        (tokenizer.keyword(token) == JackTokenizer::Keyword::CONSTRUCTOR ||
-         tokenizer.keyword(token) == JackTokenizer::Keyword::FUNCTION ||
-         tokenizer.keyword(token) == JackTokenizer::Keyword::METHOD);
-}
-
-// NOTE: This only checks for predefined types
-bool CompilationEngine::isType() const
-{
-    return isType(tokenizer.token());
-}
-
-bool CompilationEngine::isType(const std::string& token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
-        (tokenizer.keyword(token) == JackTokenizer::Keyword::INT ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::CHAR ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::BOOLEAN);
-}
-
-bool CompilationEngine::isStatement() const
-{
-    return isStatement(tokenizer.token());
-}
-
-bool CompilationEngine::isStatement(const std::string &token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
-        (tokenizer.keyword(token) == JackTokenizer::Keyword::LET ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::IF ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::WHILE ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::DO ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::RETURN);
-}
-
-bool CompilationEngine::isKeywordConstant() const
-{
-    return isKeywordConstant(tokenizer.token());
-}
-
-bool CompilationEngine::isKeywordConstant(const std::string &token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::KEYWORD &&
-        (tokenizer.keyword(token) == JackTokenizer::Keyword::TRUE ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::FALSE ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::NULL_TOKEN ||
-        tokenizer.keyword(token) == JackTokenizer::Keyword::THIS);
-}
-
-bool CompilationEngine::isOp() const
-{
-    return isOp(tokenizer.token());
-}
-
-bool CompilationEngine::isOp(const std::string &token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL &&
-        (tokenizer.symbol(token) == '+' ||
-        tokenizer.symbol(token) == '-' ||
-        tokenizer.symbol(token) == '*' ||
-        tokenizer.symbol(token) == '/' ||
-        tokenizer.symbol(token) == '&' ||
-        tokenizer.symbol(token) == '|' ||
-        tokenizer.symbol(token) == '<' ||
-        tokenizer.symbol(token) == '>' ||
-        tokenizer.symbol(token) == '=');
-}
-
-bool CompilationEngine::isUnaryOp() const
-{
-    return isUnaryOp(tokenizer.token());
-}
-
-bool CompilationEngine::isUnaryOp(const std::string &token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL &&
-        (tokenizer.symbol(token) == '-' ||
-        tokenizer.symbol(token) == '~');
-}
-
-bool CompilationEngine::isExpression() const
-{
-    return isExpression(tokenizer.token());
-}
-
-bool CompilationEngine::isExpression(const std::string &token) const
-{
-    return tokenizer.tokenType(token) == JackTokenizer::TokenType::INT_CONST ||
-        tokenizer.tokenType(token) == JackTokenizer::TokenType::STRING_CONST ||
-        isKeywordConstant(token) ||
-        tokenizer.tokenType(token) == JackTokenizer::TokenType::IDENTIFIER ||
-        (tokenizer.tokenType(token) == JackTokenizer::TokenType::SYMBOL && token == "(") ||
-        isUnaryOp(token);
 }

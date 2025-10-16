@@ -44,6 +44,7 @@ class JackTokenizer
             THIS,
         };
 
+        static std::string keywordToString(JackTokenizer::Keyword keyword);
         static JackTokenizer::TokenType tokenType(const std::string& token);
         static JackTokenizer::Keyword keyword(const std::string& token);
         static char symbol(const std::string& token);

@@ -79,6 +79,30 @@ class CompilationEngine
         CompilationEngine(const std::filesystem::path& inFile, const std::filesystem::path& outFile);
 
         void compileClass();
+
+    private:
+        JackTokenizer tokenizer;
+
+        std::ofstream ofs;
+
+        unsigned short indentLevel = 0;
+
+        void expectKeyword(JackTokenizer::Keyword expected);
+        void expectKeyword(std::initializer_list<JackTokenizer::Keyword> expected);
+        void expectSymbol(char expected);
+        void expectSymbol(std::initializer_list<char> expected);
+        void expectIdentifier();
+        void expectIntConst();
+        void expectStringConst();
+        void expectTypeOrIdentifier();
+
+        bool peekKeyword(JackTokenizer::Keyword expected, std::string* const tokenOut = nullptr);
+        bool peekKeyword(std::initializer_list<JackTokenizer::Keyword> expected, std::string* const tokenOut = nullptr);
+        bool peekSymbol(char expected, std::string* const tokenOut = nullptr);
+        bool peekSymbol(std::initializer_list<char> expected, std::string* const tokenOut = nullptr);
+
+        void writeIndent();
+        
         void compileClassVarDec();
         void compileSubroutine();
         void compileParameterList();
@@ -93,17 +117,6 @@ class CompilationEngine
         void compileExpression();
         void compileTerm();
         int compileExpressionList();
-
-    private:
-        JackTokenizer tokenizer;
-
-        std::ofstream ofs;
-
-        std::string className;
-
-        unsigned short indentLevel = 0;
-
-        void writeIndent();
         void compileOpenTag(const std::string& tag, bool trailingNewLine = false);
         void compileCloseTag(const std::string& tag, bool indent = true);
         void compileKeyword();
@@ -111,19 +124,4 @@ class CompilationEngine
         void compileIdentifier();
         void compileIntVal();
         void compileStringVal();
-
-        bool isSubroutineDec() const;
-        bool isSubroutineDec(const std::string& token) const;
-        bool isType() const;
-        bool isType(const std::string& token) const;
-        bool isStatement() const;
-        bool isStatement(const std::string& token) const;
-        bool isKeywordConstant() const;
-        bool isKeywordConstant(const std::string& token) const;
-        bool isOp() const;
-        bool isOp(const std::string& token) const;
-        bool isUnaryOp() const;
-        bool isUnaryOp(const std::string& token) const;
-        bool isExpression() const;
-        bool isExpression(const std::string& token) const;
 };

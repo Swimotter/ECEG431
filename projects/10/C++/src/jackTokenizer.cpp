@@ -74,6 +74,40 @@ static const std::unordered_map<std::string, JackTokenizer::Keyword> keywords = 
     {"this", JackTokenizer::Keyword::THIS},
 };
 
+static const std::unordered_map<JackTokenizer::Keyword, std::string> reverseKeywords = {
+    {JackTokenizer::Keyword::CLASS, "class"},
+    {JackTokenizer::Keyword::METHOD, "method"},
+    {JackTokenizer::Keyword::FUNCTION, "function"},
+    {JackTokenizer::Keyword::CONSTRUCTOR, "constructor"},
+    {JackTokenizer::Keyword::INT, "int"},
+    {JackTokenizer::Keyword::BOOLEAN, "boolean"},
+    {JackTokenizer::Keyword::CHAR, "char"},
+    {JackTokenizer::Keyword::VOID, "void"},
+    {JackTokenizer::Keyword::VAR, "var"},
+    {JackTokenizer::Keyword::STATIC, "static"},
+    {JackTokenizer::Keyword::FIELD, "field"},
+    {JackTokenizer::Keyword::LET, "let"},
+    {JackTokenizer::Keyword::DO, "do"},
+    {JackTokenizer::Keyword::IF, "if"},
+    {JackTokenizer::Keyword::ELSE, "else"},
+    {JackTokenizer::Keyword::WHILE, "while"},
+    {JackTokenizer::Keyword::RETURN, "return"},
+    {JackTokenizer::Keyword::TRUE, "true"},
+    {JackTokenizer::Keyword::FALSE, "false"},
+    {JackTokenizer::Keyword::NULL_TOKEN, "null"},
+    {JackTokenizer::Keyword::THIS, "this"},
+};
+
+std::string JackTokenizer::keywordToString(JackTokenizer::Keyword keyword)
+{
+    if (reverseKeywords.contains(keyword)) {
+        return reverseKeywords.at(keyword);
+    }
+    else {
+        return "";
+    }
+}
+
 JackTokenizer::TokenType JackTokenizer::tokenType(const std::string& token)
 {
     // Keywords and symbols
