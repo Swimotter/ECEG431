@@ -55,10 +55,7 @@ void Parser::advance()
 
 const Parser::CommandType Parser::commandType()
 {
-    if (isArithmetic()) {
-        type = CommandType::C_ARITHMETIC;
-    }
-    else if (line.find("push") != std::string::npos) {
+    if (line.find("push") != std::string::npos) {
         type = CommandType::C_PUSH;
     }
     else if (line.find("pop") != std::string::npos) {
@@ -81,6 +78,9 @@ const Parser::CommandType Parser::commandType()
     }
     else if (line.find("call") != std::string::npos) {
         type = CommandType::C_CALL;
+    }
+    else if (isArithmetic()) {
+        type = CommandType::C_ARITHMETIC;
     }
     else {
         type = CommandType::NONE;
