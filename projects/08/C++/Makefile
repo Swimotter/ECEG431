@@ -5,7 +5,7 @@ INCLUDE_FOLDER := include
 
 OBJS := $(patsubst src/%.cpp, bin/%.o, $(SRCS))
 
-PROGRAMS := ../ProgramFlow/BasicLoop ../ProgramFlow/FibonacciSeries ../FunctionCalls/SimpleFunction ../FunctionCalls/FibonacciElement ../FunctionCalls/StaticsTest
+PROGRAMS := ../ProgramFlow/BasicLoop ../ProgramFlow/FibonacciSeries ../FunctionCalls/SimpleFunction ../FunctionCalls/NestedCall ../FunctionCalls/FibonacciElement ../FunctionCalls/StaticsTest
 VM_TRANSLATOR := bin/vm_translator.exe
 EMULATOR := CPUEmulator.bat
 SUBMIT_FILE := exe.txt
