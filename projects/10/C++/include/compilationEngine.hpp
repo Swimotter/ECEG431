@@ -76,7 +76,7 @@ class JackCompilationException : public std::exception
 class CompilationEngine
 {
     public:
-        CompilationEngine(const std::filesystem::path& inFile, const std::filesystem::path& outFile);
+        CompilationEngine(const std::filesystem::path& inFile, const std::filesystem::path& outFile, const bool tokenize = false);
 
         void compileClass();
 
@@ -86,6 +86,8 @@ class CompilationEngine
         std::ofstream ofs;
 
         unsigned short indentLevel = 0;
+
+        bool tokenize;
 
         void expectKeyword(JackTokenizer::Keyword expected);
         void expectKeyword(std::initializer_list<JackTokenizer::Keyword> expected);
@@ -119,6 +121,8 @@ class CompilationEngine
         int compileExpressionList();
         void compileOpenTag(const std::string& tag, bool trailingNewLine = false);
         void compileCloseTag(const std::string& tag, bool indent = true);
+        template <typename T>
+        void compileInlineTag(const std::string &tag, const T &token);
         void compileKeyword();
         void compileSymbol();
         void compileIdentifier();

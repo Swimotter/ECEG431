@@ -25,9 +25,13 @@ int main(int argc, char *argv[]) {
         }
         
         for (const auto& inFile : files) {
-            std::filesystem::path outFile = inFile.parent_path() / (inFile.stem().string() + "-C++.xml");
+            std::filesystem::path outFile = inFile.parent_path() / (inFile.stem().string() + ".xml");
             JackAnalyzer analyzer(inFile, outFile);
             analyzer.analyze();
+
+            std::filesystem::path outFileT = inFile.parent_path() / (inFile.stem().string() + "T.xml");
+            JackAnalyzer analyzerT(inFile, outFileT, true);
+            analyzerT.analyze();
         }
     }
     else
@@ -44,8 +48,12 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        std::filesystem::path outFile = inFile.parent_path() / inFile.stem() / "-C++.xml";
+        std::filesystem::path outFile = inFile.parent_path() / (inFile.stem().string() + ".xml");
         JackAnalyzer analyzer(inFile, outFile);
         analyzer.analyze();
+
+        std::filesystem::path outFileT = inFile.parent_path() / (inFile.stem().string() + "T.xml");
+        JackAnalyzer analyzerT(inFile, outFileT, true);
+        analyzerT.analyze();
     }
 }

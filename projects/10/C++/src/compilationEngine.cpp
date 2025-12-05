@@ -9,13 +9,16 @@ constexpr std::initializer_list<char> op = {'+', '-', '*', '/', '&', '|', '<', '
 constexpr std::initializer_list<char> unaryOp = {'-', '~'};
 constexpr std::initializer_list<JackTokenizer::Keyword> keywordConstant = {JackTokenizer::Keyword::TRUE, JackTokenizer::Keyword::FALSE, JackTokenizer::Keyword::NULL_TOKEN, JackTokenizer::Keyword::THIS};
 
-CompilationEngine::CompilationEngine(const std::filesystem::path& inFile, const std::filesystem::path& outFile) : tokenizer(inFile)
+CompilationEngine::CompilationEngine(const std::filesystem::path& inFile, const std::filesystem::path& outFile, const bool tokenize) : tokenizer(inFile), tokenize(tokenize)
 {
     ofs.open(outFile);
 }
 
 void CompilationEngine::compileClass()
 {
+    if (tokenize) {
+        ofs << "<tokens>" << std::endl;
+    }
     compileOpenTag("class", true);
 
     // 'class'
@@ -41,6 +44,9 @@ void CompilationEngine::compileClass()
     expectSymbol('}');
     
     compileCloseTag("class");
+    if (tokenize) {
+        ofs << "</tokens>" << std::endl;
+    }
 }
 
 void CompilationEngine::compileClassVarDec()
@@ -664,20 +670,34 @@ void CompilationEngine::writeIndent()
 
 void CompilationEngine::compileOpenTag(const std::string &tag, bool trailingNewLine)
 {
-    writeIndent();
-    ofs << "<" << tag << ">";
-    if (trailingNewLine) {
-        ofs << std::endl;
+    if (!tokenize) {
+        writeIndent();
+        ofs << "<" << tag << ">";
+        if (trailingNewLine) {
+            ofs << std::endl;
+        }
+        indentLevel++;
     }
-    indentLevel++;
 }
 
 void CompilationEngine::compileCloseTag(const std::string &tag, bool indent)
 {
-    indentLevel--;
-    if (indent) {
+    if (!tokenize) {
+        indentLevel--;
+        if (indent) {
+            writeIndent();
+        }
+        ofs << "</" << tag << ">" << std::endl;
+    }
+}
+
+template <typename T>
+void CompilationEngine::compileInlineTag(const std::string &tag, const T &token) {
+    if (!tokenize) {
         writeIndent();
     }
+    ofs << "<" << tag << ">";
+    ofs << " " << token << " ";
     ofs << "</" << tag << ">" << std::endl;
 }
 
@@ -774,9 +794,7 @@ void CompilationEngine::compileKeyword()
             return;
     }
     
-    compileOpenTag("keyword");
-    ofs << " " << keyword << " ";
-    compileCloseTag("keyword", false);
+    compileInlineTag("keyword", keyword);
 }
 
 void CompilationEngine::compileSymbol()
@@ -809,28 +827,20 @@ void CompilationEngine::compileSymbol()
             break;
     }
 
-    compileOpenTag("symbol");
-    ofs << " " << symbol << " ";
-    compileCloseTag("symbol", false);
+    compileInlineTag("symbol", symbol);
 }
 
 void CompilationEngine::compileIdentifier()
 {
-    compileOpenTag("identifier");
-    ofs << " " << tokenizer.identifier() << " ";
-    compileCloseTag("identifier", false);
+    compileInlineTag("identifier", tokenizer.identifier());
 }
 
 void CompilationEngine::compileIntVal()
 {
-    compileOpenTag("integerConstant");
-    ofs << " " << tokenizer.intVal() << " ";
-    compileCloseTag("integerConstant", false);
+    compileInlineTag("integerConstant", tokenizer.intVal());
 }
 
 void CompilationEngine::compileStringVal()
 {
-    compileOpenTag("stringConstant");
-    ofs << " " << tokenizer.stringVal() << " ";
-    compileCloseTag("stringConstant", false);
+    compileInlineTag("stringConstant", tokenizer.stringVal());
 }

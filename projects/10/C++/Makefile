@@ -39,6 +39,7 @@ bin/%.o: src/%.cpp
 
 clean: clean-test
 	@echo "Cleaning projects/10/C++"
+	@rm -f $(SUBMIT_FILE)
 	@rm -rf bin/
 
 clean-test:

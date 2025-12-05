@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-JackAnalyzer::JackAnalyzer(const std::filesystem::path& inFile, const std::filesystem::path& outFile) : engine(inFile, outFile), inFile(inFile), outFile(outFile) {}
+JackAnalyzer::JackAnalyzer(const std::filesystem::path& inFile, const std::filesystem::path& outFile, const bool tokenize) : engine(inFile, outFile, tokenize), inFile(inFile), outFile(outFile) {}
 
 void JackAnalyzer::analyze()
 {
