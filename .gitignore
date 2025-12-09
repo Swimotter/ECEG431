@@ -19,10 +19,11 @@ bin
 # Allow required project 5 hack files
 !projects/05/*.hack
 
-# Ignore project 7, 8, 10 generated files
+# Ignore project 7, 8, 10, 11 generated files
 projects/07/**/*.asm
 projects/08/**/*.asm
 projects/10/**/*-C++.xml
+projects/11/**/*.vm
 
 # Ignore file used for turning in projects
 exe.txt
